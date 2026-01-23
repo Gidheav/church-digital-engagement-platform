@@ -1,0 +1,75 @@
+/**
+ * Main App Router
+ * 
+ * Defines application routing structure:
+ * - Public routes (accessible to all)
+ * - Member routes (requires MEMBER or ADMIN role)
+ * - Admin routes (requires ADMIN or MODERATOR role)
+ *   - User Management is restricted to ADMIN only at component level
+ */
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+import { UserRole } from '../types/auth.types';
+
+// Public pages
+import HomePage from '../public/HomePage';
+import LoginPage from '../public/LoginPage';
+import RegisterPage from '../public/RegisterPage';
+import ContentList from '../public/ContentList';
+import ContentDetail from '../public/ContentDetail';
+import AdminAuth from '../pages/AdminAuth';
+import Forbidden from '../pages/Forbidden';
+
+// Member pages
+import MemberDashboard from '../member/MemberDashboard';
+
+// Admin pages
+import AdminDashboard from '../admin/AdminDashboard';
+
+const AppRouter: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/content" element={<ContentList />} />
+        <Route path="/content/:id" element={<ContentDetail />} />
+        
+        {/* Admin Authentication (Separate from member auth) */}
+        <Route path="/admin-auth" element={<AdminAuth />} />
+        
+        {/* Member Routes */}
+        <Route 
+          path="/member" 
+          element={
+            <ProtectedRoute>
+              <MemberDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Admin Routes (ADMIN and MODERATOR access) */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute requiredRole={[UserRole.ADMIN, UserRole.MODERATOR]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Error Pages */}
+        <Route path="/403" element={<Forbidden />} />
+        
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+export default AppRouter;

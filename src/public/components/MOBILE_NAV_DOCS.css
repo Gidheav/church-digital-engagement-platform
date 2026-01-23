@@ -1,0 +1,157 @@
+/* ============================================================
+   MOBILE NAVIGATION LAYOUT - DOCUMENTATION
+   ============================================================
+
+   Visual Structure:
+   
+   ┌─────────────────────────────────────────────────────────┐
+   │  [☰]          Church Digital          [🔍]             │  <- Fixed Header (56px mobile)
+   └─────────────────────────────────────────────────────────┘
+        ↑                  ↑                    ↑
+     Hamburger           Logo              Search
+     (Left)           (Center)            (Right)
+     44x44px         Absolute pos         44x44px
+   
+   
+   When Hamburger is Clicked:
+   
+   ┌─────────────────────────────────────────────────────────┐
+   │  [✕]          Church Digital          [🔍]             │
+   └─────────────────────────────────────────────────────────┘
+   ┌──────────────┐  ← Menu slides from left (85% width, max 320px)
+   │              │
+   │  Sermons     │
+   │  Articles    │
+   │  Testimonies │
+   │  Events      │
+   │  About       │
+   │              │
+   │  [Sign In]   │
+   │  [Get Started]
+   │              │
+   └──────────────┘
+   
+   
+   Key Features:
+   ============================================================
+   
+   1. POSITIONING
+      - Hamburger: Left side, z-index 10
+      - Logo: Absolute center on mobile, static left on desktop
+      - Search: Right side, z-index 10
+   
+   2. TOUCH TARGETS
+      - All buttons: min 44x44px (Apple HIG, Material Design)
+      - Adequate spacing between elements
+      - No overlapping clickable areas
+   
+   3. ANIMATIONS
+      - Hamburger → X: 200ms smooth transform
+      - Menu drawer: 300ms slide from left
+      - Backdrop blur: 300ms fade
+      - Active state: scale(0.95) on tap
+   
+   4. ACCESSIBILITY
+      - aria-label on all icon buttons
+      - aria-expanded on hamburger
+      - Keyboard navigation support
+      - Focus states visible
+      - Screen reader announcements
+   
+   5. RESPONSIVE BREAKPOINTS
+      - Mobile: < 1024px
+        * Hamburger visible
+        * Logo centered
+        * Mobile menu drawer
+      
+      - Desktop: ≥ 1024px
+        * Hamburger hidden
+        * Logo left-aligned
+        * Full navigation menu
+        * Dropdown menus
+   
+   6. Z-INDEX LAYERS
+      - Header: 200 (--z-sticky)
+      - Hamburger/Search: 10 (relative to header)
+      - Mobile overlay: 300 (--z-fixed)
+      - Mobile menu: inherits from overlay
+      - Search overlay: 500 (--z-modal)
+   
+   7. BODY SCROLL LOCK
+      - When mobile menu open: body.overflow = 'hidden'
+      - When search open: body.overflow = 'hidden'
+      - Cleanup on unmount
+   
+   8. BACKDROP BEHAVIOR
+      - Click backdrop → closes menu
+      - Click menu content → prevents close (stopPropagation)
+      - ESC key → closes menu (handled by effect cleanup)
+   
+   
+   CSS Classes Reference:
+   ============================================================
+   
+   .public-nav              → Fixed header container
+   .nav-container           → Flex container (space-between)
+   .mobile-menu-toggle      → Hamburger button (left)
+   .nav-logo                → Logo (absolute center on mobile)
+   .nav-actions             → Right side container (margin-left: auto)
+   .mobile-search-btn       → Search button (visible < 1024px)
+   .desktop-search-btn      → Search button (visible ≥ 1024px)
+   .mobile-menu-overlay     → Full-screen backdrop
+   .mobile-nav              → Slide-out drawer
+   
+   
+   Component Props:
+   ============================================================
+   
+   State Management:
+   - isMobileMenuOpen: boolean
+   - isSearchOpen: boolean
+   - isScrolled: boolean
+   
+   Event Handlers:
+   - onClick hamburger → toggle menu
+   - onClick search → open search overlay
+   - onClick backdrop → close menu
+   - onChange route → close menu
+   
+   
+   Performance Optimizations:
+   ============================================================
+   
+   1. Backdrop blur: GPU-accelerated
+   2. Transform animations: will-change implied
+   3. Passive scroll listeners
+   4. Debounced scroll handler (20ms)
+   5. Click outside: single document listener
+   6. Cleanup on unmount: prevent memory leaks
+   
+   
+   Browser Support:
+   ============================================================
+   
+   - Modern browsers: Full support
+   - iOS Safari 12+: Full support
+   - Android Chrome 80+: Full support
+   - Backdrop blur: Graceful degradation (solid color fallback)
+   
+   
+   Testing Checklist:
+   ============================================================
+   
+   □ Hamburger animates smoothly to X
+   □ Menu slides from left without jank
+   □ Logo stays centered on mobile
+   □ Search button maintains 44px touch target
+   □ No horizontal scroll on any screen size
+   □ Body scroll locks when menu open
+   □ Backdrop closes menu on tap
+   □ Menu content doesn't close on tap
+   □ Smooth transition on orientation change
+   □ No layout shift during animations
+   □ Focus trap within menu when open
+   □ ESC key closes menu
+   □ Route change closes menu
+   
+   ============================================================ */

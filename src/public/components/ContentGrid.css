@@ -1,0 +1,158 @@
+/**
+ * ContentGrid Styles - Enterprise Edition
+ * Responsive grid with section headers
+ */
+
+/* ============================================
+   SECTION
+   ============================================ */
+
+.content-grid-section {
+  padding: var(--space-10) 0;
+}
+
+.content-grid-section:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+.content-grid-container {
+  max-width: var(--container-xl);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .content-grid-container {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.content-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.content-grid-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  position: relative;
+}
+
+.content-grid-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 48px;
+  height: 3px;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.content-grid-view-all {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.content-grid-view-all:hover {
+  color: var(--color-primary-hover);
+}
+
+.content-grid-view-all svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-fast);
+}
+
+.content-grid-view-all:hover svg {
+  transform: translateX(2px);
+}
+
+/* ============================================
+   GRID LAYOUTS
+   ============================================ */
+
+.content-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* 2 Columns */
+.content-grid-2 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .content-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 3 Columns */
+.content-grid-3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .content-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 4 Columns */
+.content-grid-4 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .content-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .content-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+
+.content-grid-empty {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-xl);
+}
+
+.content-grid-empty p {
+  color: var(--text-muted);
+  font-size: var(--text-base);
+}
