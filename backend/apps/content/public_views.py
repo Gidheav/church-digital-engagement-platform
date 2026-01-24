@@ -3,13 +3,14 @@ Public Content Views
 Read-only endpoints for published content accessible to all users
 """
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Q
 
-from .models import Post, PostStatus
+from .models import Post, PostStatus, PostContentType
 from .serializers import PostSerializer, PostListSerializer
 
 
@@ -62,3 +63,46 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
         
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_content_types(request):
+    """
+    Public endpoint to get all enabled content types with published post counts.
+    Returns only content types that have at least one published post or are system types.
+    This powers the dynamic filter on the public content library.
+    """
+    # Get all enabled content types
+    content_types = PostContentType.objects.filter(is_enabled=True)
+    
+    # Get published post counts for each content type
+    # Only count posts that are published and not deleted, with publish time in past
+    result = []
+    for ct in content_types:
+        count = Post.objects.filter(
+            content_type=ct,
+            status=PostStatus.PUBLISHED,
+            is_deleted=False,
+            published_at__lte=timezone.now()
+        ).count()
+        
+        # Include content type if it has posts OR if it's a system type
+        # (system types should always be visible even if empty)
+        if count > 0 or ct.is_system:
+            result.append({
+                'id': str(ct.id),
+                'slug': ct.slug,
+                'name': ct.name,
+                'count': count,
+                'is_system': ct.is_system,
+                'sort_order': ct.sort_order
+            })
+    
+    # Sort by sort_order, then by name
+    result.sort(key=lambda x: (x['sort_order'], x['name']))
+    
+    return Response({
+        'results': result,
+        'count': len(result)
+    })

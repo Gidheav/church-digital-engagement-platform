@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
-import contentService, { PublicPostListItem } from '../services/content.service';
+import contentService, { PublicPostListItem, ContentType } from '../services/content.service';
 import './ContentList.css';
 
 type ViewMode = 'grid' | 'list';
@@ -22,6 +22,7 @@ interface Filters {
 
 const ContentList: React.FC = () => {
   const [posts, setPosts] = useState<PublicPostListItem[]>([]);
+  const [contentTypes, setContentTypes] = useState<ContentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -40,6 +41,11 @@ const ContentList: React.FC = () => {
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
+  // Load content types on mount
+  useEffect(() => {
+    loadContentTypes();
+  }, []);
+
   // Load posts when filters change
   useEffect(() => {
     loadPosts();
@@ -53,6 +59,16 @@ const ContentList: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchValue]);
+
+  const loadContentTypes = async () => {
+    try {
+      const types = await contentService.getContentTypes();
+      setContentTypes(types);
+    } catch (err: any) {
+      console.error('Failed to load content types:', err);
+      // Don't show error to user - just use empty array
+    }
+  };
 
   const loadPosts = async () => {
     try {
@@ -70,23 +86,6 @@ const ContentList: React.FC = () => {
       setLoading(false);
     }
   };
-
-  // Dynamically extract available content types with counts from backend data
-  const availableContentTypes = useMemo(() => {
-    const typeCounts: Record<string, number> = {};
-    
-    // Count posts by type (only active, visible posts)
-    posts.forEach(post => {
-      if (post.post_type) {
-        typeCounts[post.post_type] = (typeCounts[post.post_type] || 0) + 1;
-      }
-    });
-
-    // Convert to array and sort alphabetically
-    return Object.entries(typeCounts)
-      .map(([type, count]) => ({ type, count }))
-      .sort((a, b) => a.type.localeCompare(b.type));
-  }, [posts]);
 
   // Filter and sort posts client-side
   const filteredAndSortedPosts = useMemo(() => {
@@ -132,28 +131,18 @@ const ContentList: React.FC = () => {
     });
   };
 
-  const getTypeName = (type: string): string => {
-    // Known content types mapping
-    const types: Record<string, string> = {
-      'SERMON': 'Sermons',
-      'ARTICLE': 'Articles',
-      'ANNOUNCEMENT': 'Announcements',
-      'TESTIMONY': 'Testimonies',
-      'EVENT': 'Events',
-      'DEVOTIONAL': 'Devotionals',
-      'DISCIPLESHIP': 'Discipleship',
-    };
-    
-    // Return mapped name or format the type string (handle custom admin-created types)
-    if (types[type]) {
-      return types[type];
+  const getTypeName = (slug: string): string => {
+    // Find the content type by slug from the dynamically loaded types
+    const contentType = contentTypes.find(ct => ct.slug === slug.toLowerCase());
+    if (contentType) {
+      return contentType.name;
     }
     
-    // Format custom types: "CUSTOM_TYPE" -> "Custom Type"
-    return type
+    // Fallback: Format the slug if not found (shouldn't happen in normal operation)
+    return slug
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ') + 's';
+      .join(' ');
   };
 
   const clearAllFilters = () => {
@@ -168,7 +157,10 @@ const ContentList: React.FC = () => {
 
   const getActiveFilterSummary = (): string => {
     const parts: string[] = [];
-    if (filters.type) parts.push(getTypeName(filters.type));
+    if (filters.type) {
+      const contentType = contentTypes.find(ct => ct.slug === filters.type);
+      parts.push(contentType ? contentType.name : filters.type);
+    }
     if (filters.search) parts.push(`"${filters.search}"`);
     return parts.length > 0 ? parts.join(', ') : 'All Content';
   };
@@ -202,14 +194,14 @@ const ContentList: React.FC = () => {
             <span className="filter-option-label">All Content</span>
             <span className="filter-count">({posts.length})</span>
           </button>
-          {availableContentTypes.map(({ type, count }) => (
+          {contentTypes.map((contentType) => (
             <button
-              key={type}
-              className={`filter-option ${filters.type === type ? 'active' : ''}`}
-              onClick={() => setFilters(prev => ({ ...prev, type }))}
+              key={contentType.id}
+              className={`filter-option ${filters.type === contentType.slug ? 'active' : ''}`}
+              onClick={() => setFilters(prev => ({ ...prev, type: contentType.slug }))}
             >
-              <span className="filter-option-label">{getTypeName(type)}</span>
-              <span className="filter-count">({count})</span>
+              <span className="filter-option-label">{contentType.name}</span>
+              <span className="filter-count">({contentType.count})</span>
             </button>
           ))}
         </div>

@@ -7,6 +7,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 const API_URL = 'http://localhost:8000/api/v1/public/posts';
+const PUBLIC_API_BASE = 'http://localhost:8000/api/v1/public';
 
 export interface PublicPost {
   id: string;
@@ -36,6 +37,20 @@ export interface PublicPostListItem {
   views_count: number;
   comments_count: number;
   reactions_count: number;
+}
+
+export interface ContentType {
+  id: string;
+  slug: string;
+  name: string;
+  count: number;
+  is_system: boolean;
+  sort_order: number;
+}
+
+export interface ContentTypesResponse {
+  results: ContentType[];
+  count: number;
 }
 
 class ContentService {
@@ -73,6 +88,23 @@ class ContentService {
   async getPost(id: string): Promise<PublicPost> {
     const response = await this.api.get(`/${id}/`);
     return response.data;
+  }
+
+  /**
+   * Get all available content types with post counts
+   * Fetches from the public API to ensure only enabled types with published posts are shown
+   */
+  async getContentTypes(): Promise<ContentType[]> {
+    try {
+      const response = await axios.get(`${PUBLIC_API_BASE}/content-types/`);
+      if (response.data && response.data.results) {
+        return response.data.results;
+      }
+      return [];
+    } catch (error) {
+      console.error('Failed to fetch content types:', error);
+      return [];
+    }
   }
 
   /**
