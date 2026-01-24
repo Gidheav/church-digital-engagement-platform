@@ -90,16 +90,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'config.middleware.RequestLoggingMiddleware',
-    # 'django.middleware.security.SecurityMiddleware',  # TEMP: Comment this out
+    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'django.middleware.common.CommonMiddleware',  # TEMP: Comment this out
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -140,6 +140,17 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
+
+# PostgreSQL-specific optimizations
+if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+    DATABASES['default'].update({
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000',  # 30 seconds
+        },
+        'ATOMIC_REQUESTS': True,
+        'AUTOCOMMIT': True,
+    })
 
 
 # ==============================================================================
@@ -302,7 +313,17 @@ USE_TZ = True  # Always use timezone-aware datetimes
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Include React build output in static files collection
+STATICFILES_DIRS = [
+    BASE_DIR.parent / 'frontend-build',  # React production build from Docker
+]
+
+# Whitenoise configuration for serving static files efficiently
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True if DEBUG else False
+WHITENOISE_INDEX_FILE = True  # Serve index.html for directory requests
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = config('MEDIA_ROOT', default=str(BASE_DIR / 'media'))

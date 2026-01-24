@@ -9,10 +9,13 @@ API versioning structure:
 - /api/v1/email/ - Email campaign endpoints
 - /api/v1/moderation/ - Content moderation endpoints
 - /api/v1/docs/ - API documentation (Swagger/ReDoc)
+
+Frontend:
+- / - React application (all non-API routes handled by React Router)
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import (
@@ -20,6 +23,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from .views import ReactAppView
 
 urlpatterns = [
     # Django Admin
@@ -52,4 +56,9 @@ urlpatterns = [
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Serve React application for all other routes (must be last)
+# This catches all routes not matched above and forwards them to React
+urlpatterns += [
+    re_path(r'^.*$', ReactAppView.as_view(), name='react-app'),
+]
