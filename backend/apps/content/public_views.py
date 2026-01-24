@@ -70,10 +70,11 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
 def public_content_types(request):
     """
     Public endpoint to get all enabled content types with published post counts.
-    Returns only content types that have at least one published post or are system types.
+    Returns all enabled content types (both system and custom) regardless of post count.
     This powers the dynamic filter on the public content library.
+    When a custom type is created, deleted, or modified, changes automatically reflect here.
     """
-    # Get all enabled content types
+    # Get all enabled content types (both system and custom)
     content_types = PostContentType.objects.filter(is_enabled=True)
     
     # Get published post counts for each content type
@@ -87,17 +88,16 @@ def public_content_types(request):
             published_at__lte=timezone.now()
         ).count()
         
-        # Include content type if it has posts OR if it's a system type
-        # (system types should always be visible even if empty)
-        if count > 0 or ct.is_system:
-            result.append({
-                'id': str(ct.id),
-                'slug': ct.slug,
-                'name': ct.name,
-                'count': count,
-                'is_system': ct.is_system,
-                'sort_order': ct.sort_order
-            })
+        # Include all enabled content types (system and custom)
+        # This ensures custom types appear immediately after creation
+        result.append({
+            'id': str(ct.id),
+            'slug': ct.slug,
+            'name': ct.name,
+            'count': count,
+            'is_system': ct.is_system,
+            'sort_order': ct.sort_order
+        })
     
     # Sort by sort_order, then by name
     result.sort(key=lambda x: (x['sort_order'], x['name']))

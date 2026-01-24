@@ -996,3 +996,376 @@
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* ============================================
+   CONTENT TABLE VIEW (PRODUCTION-READY)
+   ============================================ */
+
+.content-table-wrapper {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.content-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+}
+
+/* Table Header */
+.content-table thead {
+  background: var(--bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 0 var(--border-light);
+}
+
+.content-table th {
+  padding: var(--space-4) var(--space-4);
+  text-align: left;
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.content-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.content-table th.sortable:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.content-table th.sortable.active {
+  color: var(--color-primary);
+}
+
+.content-table .th-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.content-table .sort-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.content-table .sort-icon.asc {
+  transform: rotate(180deg);
+}
+
+/* Column Widths */
+.content-table .col-title {
+  width: auto;
+  min-width: 250px;
+  max-width: 500px;
+}
+
+.content-table .col-type {
+  width: 80px;
+}
+
+.content-table .col-author {
+  width: 150px;
+}
+
+.content-table .col-published {
+  width: 130px;
+}
+
+.content-table .col-views,
+.content-table .col-comments,
+.content-table .col-reactions {
+  width: 100px;
+  text-align: right;
+}
+
+/* Table Body */
+.content-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.content-table tbody tr:hover {
+  background: var(--bg-hover);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.content-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.content-table td {
+  padding: var(--space-4) var(--space-4);
+  vertical-align: middle;
+}
+
+/* Title Column */
+.title-cell {
+  display: flex;
+  align-items: center;
+}
+
+.title-text {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.content-table tbody tr:hover .title-text {
+  color: var(--color-primary);
+}
+
+/* Type Badge */
+.type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.type-badge.badge-article,
+.type-badge.badge-art {
+  background: rgba(144, 238, 144, 0.15);
+  color: #2d7a2d;
+}
+
+.type-badge.badge-sermon,
+.type-badge.badge-ser {
+  background: rgba(135, 206, 235, 0.15);
+  color: #1a5f7a;
+}
+
+.type-badge.badge-announcement,
+.type-badge.badge-ann {
+  background: rgba(255, 179, 71, 0.15);
+  color: #d97706;
+}
+
+.type-badge.badge-discipleship,
+.type-badge.badge-disc {
+  background: rgba(147, 51, 234, 0.15);
+  color: #7c2d8e;
+}
+
+.type-badge.badge-testimony,
+.type-badge.badge-test {
+  background: rgba(236, 72, 153, 0.15);
+  color: #9d174d;
+}
+
+.type-badge.badge-devotion,
+.type-badge.badge-dev {
+  background: rgba(251, 146, 60, 0.15);
+  color: #c2410c;
+}
+
+/* Dark Mode Type Badges */
+@media (prefers-color-scheme: dark) {
+  .type-badge.badge-article,
+  .type-badge.badge-art {
+    background: rgba(144, 238, 144, 0.2);
+    color: #86efac;
+  }
+
+  .type-badge.badge-sermon,
+  .type-badge.badge-ser {
+    background: rgba(135, 206, 235, 0.2);
+    color: #7dd3fc;
+  }
+
+  .type-badge.badge-announcement,
+  .type-badge.badge-ann {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fdba74;
+  }
+
+  .type-badge.badge-discipleship,
+  .type-badge.badge-disc {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+  }
+
+  .type-badge.badge-testimony,
+  .type-badge.badge-test {
+    background: rgba(236, 72, 153, 0.2);
+    color: #f9a8d4;
+  }
+
+  .type-badge.badge-devotion,
+  .type-badge.badge-dev {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fed7aa;
+  }
+}
+
+/* Author Column */
+.author-name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* Date Column */
+.date-text {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Stat Columns */
+.stat-number {
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile Table Cards */
+.content-table-mobile {
+  display: none;
+}
+
+/* ============================================
+   TABLE RESPONSIVE BEHAVIOR
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .content-table .col-reactions {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-table {
+    display: none;
+  }
+
+  .content-table-mobile {
+    display: block;
+    padding: var(--space-4);
+  }
+
+  .mobile-table-card {
+    display: block;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .mobile-table-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(34, 104, 245, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+  }
+
+  .mobile-date {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+
+  .mobile-title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-2) 0;
+    line-height: 1.4;
+  }
+
+  .mobile-author {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+  }
+
+  .mobile-stats {
+    display: flex;
+    gap: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-light);
+  }
+
+  .mobile-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+
+  .mobile-stat svg {
+    opacity: 0.6;
+  }
+}
+
+/* ============================================
+   SKELETON LOADERS FOR TABLE
+   ============================================ */
+
+.table-skeleton {
+  width: 100%;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 150px 130px 100px 100px 100px;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.skeleton-cell {
+  height: 20px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-hover) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

@@ -11,8 +11,10 @@ import Header from '../components/Header';
 import contentService, { PublicPostListItem, ContentType } from '../services/content.service';
 import './ContentList.css';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'table' | 'grid' | 'list';
 type SortOption = 'newest' | 'oldest' | 'most-viewed' | 'most-commented' | 'alphabetical';
+type TableSortColumn = 'title' | 'published' | 'views' | null;
+type TableSortDirection = 'asc' | 'desc';
 
 interface Filters {
   type: string;
@@ -35,15 +37,31 @@ const ContentList: React.FC = () => {
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem('contentLibrary_viewMode');
-    return (saved as ViewMode) || 'grid';
+    return (saved as ViewMode) || 'table';
   });
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  
+  // Table-specific sort state
+  const [tableSortColumn, setTableSortColumn] = useState<TableSortColumn>('published');
+  const [tableSortDirection, setTableSortDirection] = useState<TableSortDirection>('desc');
 
   // Load content types on mount
   useEffect(() => {
     loadContentTypes();
+  }, []);
+
+  // Refresh content types when page becomes visible (handles admin changes in another tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadContentTypes();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   // Load posts when filters change
@@ -79,6 +97,9 @@ const ContentList: React.FC = () => {
 
       const data = await contentService.getAllPosts(apiFilters);
       setPosts(data);
+      
+      // Refresh content types to get updated counts after posts load
+      loadContentTypes();
     } catch (err: any) {
       setError('Failed to load content');
       console.error(err);
@@ -101,27 +122,46 @@ const ContentList: React.FC = () => {
       );
     }
 
-    // Apply sorting
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
-        case 'oldest':
-          return new Date(a.published_at).getTime() - new Date(b.published_at).getTime();
-        case 'most-viewed':
-          return b.views_count - a.views_count;
-        case 'most-commented':
-          return b.comments_count - a.comments_count;
-        case 'alphabetical':
-          // Sort by title only, case-insensitive
-          return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-        default:
-          return 0;
-      }
-    });
+    // Apply sorting (for table view, use table sort; for grid/list use sortBy)
+    if (viewMode === 'table' && tableSortColumn) {
+      result.sort((a, b) => {
+        let comparison = 0;
+        
+        switch (tableSortColumn) {
+          case 'title':
+            comparison = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+            break;
+          case 'published':
+            comparison = new Date(a.published_at).getTime() - new Date(b.published_at).getTime();
+            break;
+          case 'views':
+            comparison = a.views_count - b.views_count;
+            break;
+        }
+        
+        return tableSortDirection === 'asc' ? comparison : -comparison;
+      });
+    } else {
+      result.sort((a, b) => {
+        switch (sortBy) {
+          case 'newest':
+            return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+          case 'oldest':
+            return new Date(a.published_at).getTime() - new Date(b.published_at).getTime();
+          case 'most-viewed':
+            return b.views_count - a.views_count;
+          case 'most-commented':
+            return b.comments_count - a.comments_count;
+          case 'alphabetical':
+            return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+          default:
+            return 0;
+        }
+      });
+    }
 
     return result;
-  }, [posts, filters.search, sortBy]);
+  }, [posts, filters.search, sortBy, viewMode, tableSortColumn, tableSortDirection]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -143,6 +183,30 @@ const ContentList: React.FC = () => {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  };
+  
+  const getTypeAbbreviation = (slug: string): string => {
+    const typeMap: Record<string, string> = {
+      'article': 'ART',
+      'announcement': 'ANN',
+      'sermon': 'SER',
+      'discipleship': 'DISC',
+      'testimony': 'TEST',
+      'devotion': 'DEV',
+    };
+    
+    return typeMap[slug.toLowerCase()] || slug.substring(0, 3).toUpperCase();
+  };
+  
+  const handleTableSort = (column: TableSortColumn) => {
+    if (tableSortColumn === column) {
+      // Toggle direction if same column
+      setTableSortDirection(tableSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to descending (newest/most first)
+      setTableSortColumn(column);
+      setTableSortDirection('desc');
+    }
   };
 
   const clearAllFilters = () => {
@@ -230,9 +294,57 @@ const ContentList: React.FC = () => {
       <div className="content-library-page">
         <Header />
         <div className="content-library-container">
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Loading content library...</p>
+          <div className="library-header">
+            <div className="library-title-section">
+              <h1>Church Content</h1>
+              <p className="library-subtitle">
+                Sermons, articles, announcements, and discipleship resources from our church
+              </p>
+            </div>
+          </div>
+          <div className="library-layout">
+            <div className="desktop-filters">
+              <div className="filter-panel">
+                <div className="filter-panel-header">
+                  <h3>Filters</h3>
+                </div>
+                <div className="filter-section">
+                  <div className="skeleton-cell" style={{ height: '40px', marginBottom: '8px' }}></div>
+                  <div className="skeleton-cell" style={{ height: '40px', marginBottom: '8px' }}></div>
+                  <div className="skeleton-cell" style={{ height: '40px' }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="content-area">
+              <div className="content-table-wrapper">
+                <table className="content-table table-skeleton">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th className="col-type">Type</th>
+                      <th className="col-author">Author</th>
+                      <th className="col-published">Published</th>
+                      <th className="col-views">Views</th>
+                      <th className="col-comments">Comments</th>
+                      <th className="col-reactions">Reactions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...Array(8)].map((_, i) => (
+                      <tr key={i}>
+                        <td><div className="skeleton-cell" style={{ height: '20px', width: '80%' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '24px', width: '50px' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '18px', width: '100px' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '18px', width: '90px' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '18px', width: '40px', marginLeft: 'auto' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '18px', width: '40px', marginLeft: 'auto' }}></div></td>
+                        <td><div className="skeleton-cell" style={{ height: '18px', width: '40px', marginLeft: 'auto' }}></div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -312,9 +424,20 @@ const ContentList: React.FC = () => {
                 {/* View Toggle */}
                 <div className="view-toggle">
                   <button
+                    className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                    onClick={() => handleViewModeChange('table')}
+                    aria-label="Table view"
+                    title="Table view"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button
                     className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
                     onClick={() => handleViewModeChange('grid')}
                     aria-label="Grid view"
+                    title="Grid view"
                   >
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
@@ -324,6 +447,7 @@ const ContentList: React.FC = () => {
                     className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
                     onClick={() => handleViewModeChange('list')}
                     aria-label="List view"
+                    title="List view"
                   >
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -354,6 +478,157 @@ const ContentList: React.FC = () => {
                     Clear Filters
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Content Table View */}
+            {!error && viewMode === 'table' && filteredAndSortedPosts.length > 0 && (
+              <div className="content-table-wrapper">
+                <table className="content-table">
+                  <thead>
+                    <tr>
+                      <th 
+                        className={`sortable ${tableSortColumn === 'title' ? 'active' : ''}`}
+                        onClick={() => handleTableSort('title')}
+                      >
+                        <div className="th-content">
+                          <span>Title</span>
+                          {tableSortColumn === 'title' && (
+                            <svg 
+                              className={`sort-icon ${tableSortDirection}`} 
+                              width="16" 
+                              height="16" 
+                              viewBox="0 0 20 20" 
+                              fill="currentColor"
+                            >
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </th>
+                      <th className="col-type">Type</th>
+                      <th className="col-author">Author</th>
+                      <th 
+                        className={`col-published sortable ${tableSortColumn === 'published' ? 'active' : ''}`}
+                        onClick={() => handleTableSort('published')}
+                      >
+                        <div className="th-content">
+                          <span>Published</span>
+                          {tableSortColumn === 'published' && (
+                            <svg 
+                              className={`sort-icon ${tableSortDirection}`} 
+                              width="16" 
+                              height="16" 
+                              viewBox="0 0 20 20" 
+                              fill="currentColor"
+                            >
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className={`col-views sortable ${tableSortColumn === 'views' ? 'active' : ''}`}
+                        onClick={() => handleTableSort('views')}
+                      >
+                        <div className="th-content">
+                          <span>Views</span>
+                          {tableSortColumn === 'views' && (
+                            <svg 
+                              className={`sort-icon ${tableSortDirection}`} 
+                              width="16" 
+                              height="16" 
+                              viewBox="0 0 20 20" 
+                              fill="currentColor"
+                            >
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </th>
+                      <th className="col-comments">Comments</th>
+                      <th className="col-reactions">Reactions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAndSortedPosts.map((post) => (
+                      <tr 
+                        key={post.id}
+                        onClick={() => window.location.href = `/content/${post.id}`}
+                        className="table-row"
+                      >
+                        <td className="col-title">
+                          <div className="title-cell">
+                            <span className="title-text">{post.title}</span>
+                          </div>
+                        </td>
+                        <td className="col-type">
+                          <span 
+                            className={`type-badge badge-${post.post_type.toLowerCase()}`}
+                            title={getTypeName(post.post_type)}
+                          >
+                            {getTypeAbbreviation(post.post_type)}
+                          </span>
+                        </td>
+                        <td className="col-author">
+                          <span className="author-name">{post.author_name}</span>
+                        </td>
+                        <td className="col-published">
+                          <span className="date-text">{formatDate(post.published_at)}</span>
+                        </td>
+                        <td className="col-views">
+                          <span className="stat-number">{post.views_count.toLocaleString()}</span>
+                        </td>
+                        <td className="col-comments">
+                          <span className="stat-number">{post.comments_count.toLocaleString()}</span>
+                        </td>
+                        <td className="col-reactions">
+                          <span className="stat-number">{post.reactions_count.toLocaleString()}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* Mobile Card View for Table */}
+                <div className="content-table-mobile">
+                  {filteredAndSortedPosts.map((post) => (
+                    <Link to={`/content/${post.id}`} key={post.id} className="mobile-table-card">
+                      <div className="mobile-card-header">
+                        <span 
+                          className={`type-badge badge-${post.post_type.toLowerCase()}`}
+                          title={getTypeName(post.post_type)}
+                        >
+                          {getTypeAbbreviation(post.post_type)}
+                        </span>
+                        <span className="mobile-date">{formatDate(post.published_at)}</span>
+                      </div>
+                      <h3 className="mobile-title">{post.title}</h3>
+                      <div className="mobile-author">By {post.author_name}</div>
+                      <div className="mobile-stats">
+                        <span className="mobile-stat">
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                          </svg>
+                          {post.views_count}
+                        </span>
+                        <span className="mobile-stat">
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                          </svg>
+                          {post.comments_count}
+                        </span>
+                        <span className="mobile-stat">
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                          </svg>
+                          {post.reactions_count}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
 
