@@ -10,7 +10,7 @@ export interface HomePost {
   id: string;
   title: string;
   excerpt: string;
-  type: 'SERMON' | 'ANNOUNCEMENT' | 'ARTICLE' | 'DEVOTIONAL' | 'TESTIMONY';
+  type: 'SERMON' | 'ANNOUNCEMENT' | 'ARTICLE' | 'DEVOTIONAL' | 'TESTIMONY' | 'DISCIPLESHIP';
   published_at: string;
   author: {
     first_name: string;
@@ -24,6 +24,7 @@ export interface HomeContent {
   featured: HomePost | null;
   announcements: HomePost[];
   sermons: HomePost[];
+  discipleship: HomePost[];
   articles: HomePost[];
   latest: HomePost[];
 }

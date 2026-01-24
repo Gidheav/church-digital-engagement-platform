@@ -39,9 +39,10 @@ def home_page_content(request):
         announcement_type = PostContentType.objects.get(slug='announcement')
         sermon_type = PostContentType.objects.get(slug='sermon')
         article_type = PostContentType.objects.get(slug='article')
+        discipleship_type = PostContentType.objects.get(slug='discipleship')
     except PostContentType.DoesNotExist:
         # Fallback to None if types don't exist yet
-        announcement_type = sermon_type = article_type = None
+        announcement_type = sermon_type = article_type = discipleship_type = None
     
     # Featured content (highest priority featured post, or latest if none)
     featured_post = base_qs.filter(is_featured=True).order_by('-featured_priority', '-published_at').first()
@@ -65,6 +66,13 @@ def home_page_content(request):
         articles = base_qs.filter(content_type=article_type).order_by('-published_at')[:6]
     else:
         articles = base_qs.filter(post_type=PostType.ARTICLE).order_by('-published_at')[:6]
+    
+    # Discipleship content
+    if discipleship_type:
+        discipleship = base_qs.filter(content_type=discipleship_type).order_by('-published_at')[:6]
+    else:
+        # No fallback for discipleship since it's new (won't exist in old post_type enum)
+        discipleship = base_qs.none()
     
     # Latest mixed content (for "More from the Church" section)
     latest = base_qs.order_by('-published_at')[:10]
@@ -90,6 +98,7 @@ def home_page_content(request):
         'featured': serialize_post(featured_post, excerpt_length=300) if featured_post else None,
         'announcements': [serialize_post(p, excerpt_length=150) for p in announcements],
         'sermons': [serialize_post(p, excerpt_length=180) for p in sermons],
+        'discipleship': [serialize_post(p, excerpt_length=200) for p in discipleship],
         'articles': [serialize_post(p, excerpt_length=220) for p in articles],
         'latest': [serialize_post(p, excerpt_length=200) for p in latest],
     })

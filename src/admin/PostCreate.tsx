@@ -9,7 +9,6 @@ import contentTypeService, { ContentType } from '../services/contentType.service
 import RichTextEditor from '../components/RichTextEditor';
 import { 
   XIcon, 
-  FileTextIcon, 
   TypeIcon, 
   ImageIcon, 
   VideoIcon, 
@@ -138,10 +137,9 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel }) => {
       {/* Header */}
       <div className="post-form-header-pro">
         <div className="header-content">
-          <FileTextIcon className="header-icon" />
           <div className="header-text">
             <h2 className="header-title">Create New Post</h2>
-            <p className="header-subtitle">Fill in the details below to create a new content post</p>
+            <p className="header-subtitle">Add new content to your platform</p>
           </div>
         </div>
         <button 

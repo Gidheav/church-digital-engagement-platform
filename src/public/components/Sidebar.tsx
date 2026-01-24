@@ -24,6 +24,7 @@ interface SidebarEvent {
 interface SidebarProps {
   recentPosts?: HomePost[];
   events?: SidebarEvent[];
+  announcements?: HomePost[];
   verseOfTheDay?: {
     text: string;
     reference: string;
@@ -33,6 +34,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   recentPosts = [],
   events = [],
+  announcements = [],
   verseOfTheDay,
 }) => {
   const [email, setEmail] = useState('');
@@ -78,6 +80,57 @@ const Sidebar: React.FC<SidebarProps> = ({
             "{verseOfTheDay.text}"
           </blockquote>
           <cite className="verse-reference">{verseOfTheDay.reference}</cite>
+        </div>
+      )}
+
+      {/* Announcements Section */}
+      {announcements.length > 0 && (
+        <div className="sidebar-card announcements-card">
+          <h3 className="sidebar-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            Latest Updates
+          </h3>
+          <div className="announcements-list">
+            {announcements.slice(0, 6).map((announcement) => (
+              <Link
+                key={announcement.id}
+                to={`/content/${announcement.id}`}
+                className="announcement-item"
+              >
+                <div className="announcement-header">
+                  <span className="announcement-indicator" />
+                  <span className="announcement-date">
+                    {new Date(announcement.published_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <h4 className="announcement-title">{announcement.title}</h4>
+                {announcement.excerpt && (
+                  <p className="announcement-excerpt">
+                    {announcement.excerpt.substring(0, 60)}...
+                  </p>
+                )}
+                {announcement.type && (
+                  <span className={`announcement-badge badge-${announcement.type.toLowerCase()}`}>
+                    {announcement.type.replace('_', ' ')}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+          {announcements.length > 6 && (
+            <Link to="/announcements" className="sidebar-link">
+              View All Updates
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"/>
+              </svg>
+            </Link>
+          )}
         </div>
       )}
 
