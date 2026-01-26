@@ -326,10 +326,11 @@ STATICFILES_DIRS = [
 ]
 
 # Whitenoise configuration for serving static files efficiently
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True if DEBUG else False
 WHITENOISE_INDEX_FILE = True  # Serve index.html for directory requests
+WHITENOISE_KEEP_ONLY_HASHED_FILES = False  # Keep original files too
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = config('MEDIA_ROOT', default=str(BASE_DIR / 'media'))

@@ -48,6 +48,12 @@ RUN pip install \
 # Copy React build output from frontend-builder stage INTO backend directory
 COPY --from=frontend-builder /frontend-build/build ./backend/frontend-build
 
+# Debug: List what we copied
+RUN ls -la backend/frontend-build/ && \
+    ls -la backend/frontend-build/static/ && \
+    ls -la backend/frontend-build/static/js/ || echo "No js folder" && \
+    ls -la backend/frontend-build/static/css/ || echo "No css folder"
+
 # Create necessary directories and set permissions
 RUN mkdir -p backend/staticfiles backend/media && \
     useradd -m -u 1000 appuser && \
