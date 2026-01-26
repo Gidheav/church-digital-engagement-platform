@@ -59,6 +59,7 @@ if settings.DEBUG:
 
 # Serve React application for all other routes (must be last)
 # This catches all routes not matched above and forwards them to React
+# Exclude /static/ to let Whitenoise serve static files
 urlpatterns += [
-    re_path(r'^.*$', ReactAppView.as_view(), name='react-app'),
+    re_path(r'^(?!static/).*$', ReactAppView.as_view(), name='react-app'),
 ]

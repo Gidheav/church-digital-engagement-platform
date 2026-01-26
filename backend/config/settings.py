@@ -315,8 +315,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Include React build output in static files collection
+# Point to the 'static' subdirectory inside the React build
 STATICFILES_DIRS = [
-    BASE_DIR.parent / 'frontend-build',  # React production build from Docker
+    BASE_DIR.parent / 'frontend-build' / 'static',  # React static assets (js, css, media)
 ]
 
 # Whitenoise configuration for serving static files efficiently

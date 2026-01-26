@@ -22,7 +22,7 @@ RUN npm run build
 # ============================================================================
 # STAGE 2: Build Django Backend + Serve Application
 # ============================================================================
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 # Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -30,28 +30,26 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=config.settings
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 # Set working directory
 WORKDIR /app
 
 # Copy backend files
 COPY backend/ ./backend/
 
-# Install Python dependencies
-RUN pip install --upgrade pip --no-cache-dir && \
-    pip install --no-cache-dir -r backend/requirements.txt
+# Install Python dependencies with timeout and retries
+# Using longer timeout for slow connections
+RUN pip install \
+    --default-timeout=300 \
+    --retries 15 \
+    --no-cache-dir \
+    -r backend/requirements.txt
 
 # Copy React build output from frontend-builder stage
 COPY --from=frontend-builder /frontend-build/build ./frontend-build
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
+# Create necessary directories for static files
+RUN mkdir -p backend/staticfiles && \
+    useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user
@@ -59,6 +57,9 @@ USER appuser
 
 # Collect static files (includes Django admin + frontend build)
 RUN python backend/manage.py collectstatic --noinput --clear
+
+# Copy index.html to static root for React app serving
+RUN cp /app/frontend-build/index.html /app/backend/staticfiles/index.html || true
 
 # Expose port
 EXPOSE 8000
