@@ -14,8 +14,9 @@ COPY public/ ./public/
 COPY src/ ./src/
 COPY tsconfig.json ./
 
-# Build optimized production React app
+# Build optimized production React app with production API URL
 ENV NODE_ENV=production
+ENV REACT_APP_API_BASE_URL=/api/v1
 RUN npm run build
 
 
