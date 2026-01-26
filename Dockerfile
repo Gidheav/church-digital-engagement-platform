@@ -65,6 +65,13 @@ USER appuser
 # Collect static files (includes Django admin + frontend build)
 RUN python backend/manage.py collectstatic --noinput --clear
 
+# Debug: Verify static files after collection
+RUN ls -la backend/staticfiles/ && \
+    ls -la backend/staticfiles/js/ 2>/dev/null || echo "No js in staticfiles" && \
+    ls -la backend/staticfiles/css/ 2>/dev/null || echo "No css in staticfiles" && \
+    find backend/staticfiles -name "*.js" -exec ls -lh {} \; | head -5 && \
+    find backend/staticfiles -name "*.css" -exec ls -lh {} \; | head -5
+
 # Expose port
 EXPOSE 8000
 
