@@ -111,7 +111,10 @@ PREPEND_WWW = False
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'frontend-build',  # For React index.html
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -317,7 +320,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Include React build output in static files collection
 # Point to the 'static' subdirectory inside the React build
 STATICFILES_DIRS = [
-    BASE_DIR.parent / 'frontend-build' / 'static',  # React static assets (js, css, media)
+    BASE_DIR / 'frontend-build' / 'static',  # React static assets (js, css, media)
 ]
 
 # Whitenoise configuration for serving static files efficiently

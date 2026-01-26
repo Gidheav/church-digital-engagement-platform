@@ -44,11 +44,11 @@ RUN pip install \
     --no-cache-dir \
     -r backend/requirements.txt
 
-# Copy React build output from frontend-builder stage
-COPY --from=frontend-builder /frontend-build/build ./frontend-build
+# Copy React build output from frontend-builder stage INTO backend directory
+COPY --from=frontend-builder /frontend-build/build ./backend/frontend-build
 
-# Create necessary directories for static files
-RUN mkdir -p backend/staticfiles && \
+# Create necessary directories and set permissions
+RUN mkdir -p backend/staticfiles backend/media && \
     useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
@@ -57,9 +57,6 @@ USER appuser
 
 # Collect static files (includes Django admin + frontend build)
 RUN python backend/manage.py collectstatic --noinput --clear
-
-# Copy index.html to static root for React app serving
-RUN cp /app/frontend-build/index.html /app/backend/staticfiles/index.html || true
 
 # Expose port
 EXPOSE 8000
