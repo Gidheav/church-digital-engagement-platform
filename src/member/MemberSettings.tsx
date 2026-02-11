@@ -26,9 +26,9 @@ const MemberSettings: React.FC = () => {
     setVerificationMessage(null);
 
     try {
-      console.log('📧 SENDING VERIFICATION EMAIL...');
+      console.log('[DEBUG] SENDING VERIFICATION EMAIL...');
       const result = await emailVerificationService.initiateVerification();
-      console.log('✅ SUCCESS:', result);
+      console.log('[SUCCESS] VERIFICATION RESPONSE:', result);
       setVerificationMessage({
         type: 'success',
         text: `${result.message}. The link will expire in ${result.expires_in_minutes} minutes.`,
@@ -47,7 +47,7 @@ const MemberSettings: React.FC = () => {
       }, 1000);
       
     } catch (error: any) {
-      console.error('❌ ERROR DURING VERIFICATION:', {
+      console.error('[ERROR] VERIFICATION FAILED:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,

@@ -95,22 +95,22 @@ class EmailVerificationService:
             >>> result = EmailVerificationService.initiate_verification(user, request)
             >>> print(result['message'])
         """
-        print(f"\n🟡 EMAIL VERIFICATION SERVICE - START")
+        print(f"\n[DEBUG] EMAIL VERIFICATION SERVICE - START")
         print(f"User email: {user.email}")
         print(f"Email verified: {user.email_verified}")
         
         # Check if already verified
         if user.email_verified:
-            print(f"❌ User already verified")
+            print(f"[ERROR] User already verified")
             raise AlreadyVerifiedError('Email is already verified')
         
         # Generate token
-        print(f"🔑 Generating secure token...")
+        print(f"[DEBUG] Generating secure token...")
         raw_token, hashed_token = TokenService.generate_token()
         print(f"Token generated (length: {len(raw_token)} chars)")
         
         # Update user with token and expiry
-        print(f"💾 Saving token to database...")
+        print(f"[DEBUG] Saving token to database...")
         user.email_verification_token = hashed_token
         user.email_verification_token_expires_at = TokenService.get_expiry_time()
         user.email_verification_sent_at = timezone.now()
@@ -119,20 +119,20 @@ class EmailVerificationService:
             'email_verification_token_expires_at',
             'email_verification_sent_at'
         ])
-        print(f"✅ User saved to database")
+        print(f"[SUCCESS] User saved to database")
         print(f"Token expires at: {user.email_verification_token_expires_at}")
         print(f"Sent at: {user.email_verification_sent_at}")
         
         # Send verification email
-        print(f"📧 Building verification URL...")
+        print(f"[DEBUG] Building verification URL...")
         verification_url = cls._build_verification_url(raw_token, request)
         print(f"URL: {verification_url}")
         
-        print(f"📤 Sending email...")
+        print(f"[DEBUG] Sending email...")
         cls._send_verification_email(user, verification_url)
-        print(f"✅ Email sent successfully")
+        print(f"[SUCCESS] Email sent successfully")
         
-        print(f"✅ VERIFICATION INITIATED SUCCESSFULLY\n")
+        print(f"[SUCCESS] VERIFICATION INITIATED SUCCESSFULLY\n")
         return {
             'success': True,
             'message': 'Verification email sent successfully',

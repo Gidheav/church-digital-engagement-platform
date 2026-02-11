@@ -55,7 +55,7 @@ class ApiService {
         // Handle 403 Forbidden - role-based access denied
         if (error.response?.status === 403) {
           // Log the unauthorized access attempt WITH FULL DEBUG INFO
-          console.error('🚨 403 FORBIDDEN ERROR:', {
+          console.error('[ERROR] 403 FORBIDDEN:', {
             status: error.response.status,
             data: error.response.data,
             url: error.config?.url,

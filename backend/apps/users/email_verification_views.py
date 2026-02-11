@@ -40,7 +40,6 @@ class InitiateEmailVerificationView(APIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['post']  # Explicitly define allowed methods
     
     @extend_schema(
         tags=['Email Verification'],
@@ -65,54 +64,63 @@ class InitiateEmailVerificationView(APIView):
         }
     )
     def post(self, request):
-        # SENIOR ENGINEER DEBUG: Print request details
-        print("=" * 80)
-        print("🔍 INITIATE EMAIL VERIFICATION VIEW HIT")
-        print(f"User: {request.user}")
-        print(f"User Authenticated: {request.user.is_authenticated}")
-        print(f"User ID: {request.user.id if request.user.is_authenticated else 'N/A'}")
-        print(f"Auth Header: {request.META.get('HTTP_AUTHORIZATION', 'MISSING')}")
-        print(f"Request Path: {request.path}")
-        print(f"Request Method: {request.method}")
-        print("=" * 80)
-        
+        """
+        Handle POST request for email verification initiation.
+        Returns consistent JSON structure with success, message, and data fields.
+        """
         try:
             result = EmailVerificationService.initiate_verification(
                 user=request.user,
                 request=request
             )
-            print("✅ SUCCESS: Verification email sent")
+            
+            # CRITICAL DEBUG - See what we're actually returning
+            import json
+            print(f"\n[DEBUG] ===== RESPONSE STRUCTURE DIAGNOSIS =====")
+            print(f"[DEBUG] RAW RESULT TYPE: {type(result)}")
+            print(f"[DEBUG] RAW RESULT CONTENT: {result}")
+            try:
+                print(f"[DEBUG] JSON RESPONSE: {json.dumps(result, indent=2)}")
+                print(f"[DEBUG] RESPONSE SIZE: {len(json.dumps(result))} bytes")
+            except Exception as json_err:
+                print(f"[DEBUG] JSON SERIALIZATION FAILED: {json_err}")
+            print(f"[DEBUG] ==========================================\n")
+            
             return Response(result, status=status.HTTP_200_OK)
             
         except AlreadyVerifiedError as e:
-            print(f"⚠️ Already Verified Error: {str(e)}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            # PRINT FULL STACK TRACE FOR DEBUGGING
-            import traceback
-            print(f"\n❌ ERROR IN EMAIL VERIFICATION:")
-            print(f"Error type: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
-            print(f"Stack trace:")
-            traceback.print_exc()
-            print(f"\n")
-            
-            # Return the actual error message to frontend
-            error_response = {
+            return Response({
+                'success': False,
                 'error': str(e),
-                'type': type(e).__name__
-            }
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Return appropriate status code based on error type
-            if 'already verified' in str(e).lower():
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-            elif 'rate limit' in str(e).lower() or 'cooldown' in str(e).lower() or 'wait' in str(e).lower():
-                return Response(error_response, status=status.HTTP_429_TOO_MANY_REQUESTS)
-            else:
-                return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except RateLimitError as e:
+            return Response({
+                'success': False,
+                'error': str(e),
+                'message': str(e),
+                'retry_after_seconds': getattr(e, 'retry_after', 60)
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
+        except Exception as e:
+            print(f"[ERROR] Email verification failed: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            return Response({
+                'success': False,
+                'error': 'Failed to send verification email',
+                'message': 'An internal error occurred. Please try again later.',
+                'type': type(e).__name__
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get(self, request):
+        """Explicitly reject GET requests."""
+        return Response(
+            {'error': 'Method not allowed', 'message': 'Use POST to send verification email'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
 
 
 class ResendEmailVerificationView(APIView):
@@ -132,7 +140,6 @@ class ResendEmailVerificationView(APIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['post']  # Explicitly define allowed methods
     
     @extend_schema(
         tags=['Email Verification'],
@@ -208,7 +215,6 @@ class VerifyEmailView(APIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get', 'post']  # Allow both GET and POST
     
     @extend_schema(
         tags=['Email Verification'],
