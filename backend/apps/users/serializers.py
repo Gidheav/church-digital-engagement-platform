@@ -24,13 +24,20 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'is_active', 'date_joined', 'phone_number',
-            'profile_picture', 'bio'
+            'profile_picture', 'bio', 'email_verified', 'email_verified_at'
         ]
-        read_only_fields = ['id', 'date_joined', 'is_active']
+        read_only_fields = ['id', 'date_joined', 'is_active', 'email_verified', 'email_verified_at']
     
     def get_full_name(self, obj):
-        """Get user's full name."""
-        return obj.get_full_name()
+        """Get user's full name, falling back to email if name not set."""
+        full_name = obj.get_full_name()
+        # If full_name is just the email (because first_name and last_name are empty)
+        # Return email. Otherwise return the actual full name.
+        if not full_name or full_name == obj.email:
+            # Extract name from email (before @)
+            email_name = obj.email.split('@')[0]
+            return email_name.replace('.', ' ').replace('-', ' ').title() or obj.email
+        return full_name
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -214,8 +221,15 @@ class AdminUserListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
     
     def get_full_name(self, obj):
-        """Get user's full name."""
-        return obj.get_full_name()
+        """Get user's full name, falling back to email if name not set."""
+        full_name = obj.get_full_name()
+        # If full_name is just the email (because first_name and last_name are empty)
+        # Return email. Otherwise return the actual full name.
+        if not full_name or full_name == obj.email:
+            # Extract name from email (before @)
+            email_name = obj.email.split('@')[0]
+            return email_name.replace('.', ' ').replace('-', ' ').title() or obj.email
+        return full_name
     
     def get_account_status(self, obj):
         """Get current account status."""
@@ -242,8 +256,15 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
         read_only_fields = fields
     
     def get_full_name(self, obj):
-        """Get user's full name."""
-        return obj.get_full_name()
+        """Get user's full name, falling back to email if name not set."""
+        full_name = obj.get_full_name()
+        # If full_name is just the email (because first_name and last_name are empty)
+        # Return email. Otherwise return the actual full name.
+        if not full_name or full_name == obj.email:
+            # Extract name from email (before @)
+            email_name = obj.email.split('@')[0]
+            return email_name.replace('.', ' ').replace('-', ' ').title() or obj.email
+        return full_name
     
     def get_account_status(self, obj):
         """Get current account status."""

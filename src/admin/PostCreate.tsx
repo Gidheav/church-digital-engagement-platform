@@ -138,7 +138,7 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel }) => {
       <div className="post-form-header-pro">
         <div className="header-content">
           <div className="header-text">
-            <h2 className="header-title">Create New Post</h2>
+            <h2 className="header-title">Creating New Post</h2>
             <p className="header-subtitle">Add new content to your platform</p>
           </div>
         </div>

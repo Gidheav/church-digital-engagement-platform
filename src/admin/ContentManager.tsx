@@ -203,12 +203,6 @@ const ContentManager: React.FC = () => {
   if (viewMode === 'create') {
     return (
       <div className="content-manager-pro">
-        <div className="page-header-pro">
-          <div className="page-title-section">
-            <h1 className="page-title">Create New Post</h1>
-            <p className="page-subtitle">Add new content to your platform</p>
-          </div>
-        </div>
         <PostCreate onSuccess={handleSuccess} onCancel={handleCancel} />
       </div>
     );
@@ -217,12 +211,12 @@ const ContentManager: React.FC = () => {
   if (viewMode === 'edit' && selectedPost) {
     return (
       <div className="content-manager-pro">
-        <div className="page-header-pro">
+        {/* <div className="page-header-pro">
           <div className="page-title-section">
             <h1 className="page-title">Edit Post</h1>
             <p className="page-subtitle">Modify existing content</p>
           </div>
-        </div>
+        </div>*/}
         <PostEdit
           postId={selectedPost.id}
           onSuccess={handleSuccess}

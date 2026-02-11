@@ -11,7 +11,6 @@ import {
   MoonIcon,
   MenuIcon,
   BellIcon,
-  SearchIcon,
   LogOutIcon,
   SettingsIcon,
   UserIcon,
@@ -141,15 +140,6 @@ const AdminTopBar: React.FC<TopBarProps> = ({
       <div className="topbar-right">
         {/* Custom Actions */}
         {actions && <div className="topbar-custom-actions">{actions}</div>}
-
-        {/* Search Button */}
-        <button
-          className="topbar-icon-btn"
-          aria-label="Search"
-          title="Search (Cmd+K)"
-        >
-          <SearchIcon size={20} />
-        </button>
 
         {/* Notifications */}
         <div className="topbar-dropdown" ref={notifMenuRef}>

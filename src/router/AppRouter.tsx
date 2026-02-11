@@ -21,9 +21,11 @@ import ContentList from '../public/ContentList';
 import ContentDetail from '../public/ContentDetail';
 import AdminAuth from '../pages/AdminAuth';
 import Forbidden from '../pages/Forbidden';
+import VerifyEmail from '../pages/VerifyEmail';
 
 // Member pages
 import MemberDashboard from '../member/MemberDashboard';
+import MemberSettings from '../member/MemberSettings';
 
 // Admin pages
 import AdminDashboard from '../admin/AdminDashboard';
@@ -42,12 +44,31 @@ const AppRouter: React.FC = () => {
         {/* Admin Authentication (Separate from member auth) */}
         <Route path="/admin-auth" element={<AdminAuth />} />
         
+        {/* Email Verification (Protected - requires authentication) */}
+        <Route 
+          path="/verify-email" 
+          element={
+            <ProtectedRoute>
+              <VerifyEmail />
+            </ProtectedRoute>
+          } 
+        />
+        
         {/* Member Routes */}
         <Route 
           path="/member" 
           element={
             <ProtectedRoute>
               <MemberDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/member/settings" 
+          element={
+            <ProtectedRoute>
+              <MemberSettings />
             </ProtectedRoute>
           } 
         />

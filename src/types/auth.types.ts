@@ -20,6 +20,8 @@ export interface User {
   phoneNumber?: string;
   profilePicture?: string;
   bio?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string | null;
 }
 
 export interface AuthTokens {

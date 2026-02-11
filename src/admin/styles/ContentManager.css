@@ -21,6 +21,7 @@
 .page-title-section {
   flex: 1;
   min-width: 0;
+  text-align: center;
 }
 
 .page-title {

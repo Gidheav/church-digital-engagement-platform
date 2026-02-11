@@ -95,11 +95,17 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # AuthenticationMiddleware moved BEFORE CsrfViewMiddleware to fix JWT 403 error
+    # This allows CSRF to make smarter decisions based on authentication state
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # SENIOR ENGINEER FIX: JWT CSRF exemption BEFORE CSRF middleware
+    'config.middleware.JWTCSRFExemptMiddleware',  # Bypass CSRF for Bearer tokens
+    'django.middleware.csrf.CsrfViewMiddleware',   # CSRF validation (re-enabled)
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Custom middleware re-enabled after fixing CSRF issue
     'config.middleware.RequestLoggingMiddleware',
+    'config.middleware.RateLimitMiddleware',  # Rate limiting for email verification
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -257,7 +263,8 @@ CORS_ALLOWED_ORIGINS = [
     'https://g98l5wj0-8000.uks1.devtunnels.ms',  # Django Dev Tunnel (for cross-origin)
     'https://church-digital-engagement-platform.onrender.com',  # Production on Render
 ]
-CORS_ALLOW_CREDENTIALS = True
+# Set to False since we removed withCredentials from frontend (JWT-only, no cookies)
+CORS_ALLOW_CREDENTIALS = False
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -416,6 +423,18 @@ SPECTACULAR_SETTINGS = {
 
 # Site name for email templates and notifications
 SITE_NAME = config('SITE_NAME', default='Church Digital Platform')
+SITE_DOMAIN = config('SITE_DOMAIN', default='localhost:3000')
+
+# Email verification settings
+EMAIL_VERIFICATION_URL = config(
+    'EMAIL_VERIFICATION_URL',
+    default='{protocol}://{domain}/verify-email?token={token}'
+)
+EMAIL_VERIFICATION_EXPIRY_MINUTES = config(
+    'EMAIL_VERIFICATION_EXPIRY_MINUTES',
+    default=30,
+    cast=int
+)
 
 # Default user role for new registrations
 DEFAULT_USER_ROLE = 'VISITOR'

@@ -11,6 +11,7 @@ Authentication endpoints:
 """
 
 from django.urls import path, include
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
@@ -23,6 +24,11 @@ from .views import (
     CsrfTokenView
 )
 from .admin_auth_views import AdminRegistrationView, AdminLoginView
+from .email_verification_views import (
+    InitiateEmailVerificationView,
+    ResendEmailVerificationView,
+    VerifyEmailView
+)
 
 app_name = 'users'
 
@@ -47,6 +53,11 @@ urlpatterns = [
     # User profile endpoints
     path('auth/me/', CurrentUserView.as_view(), name='current-user'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
+    
+    # Email verification endpoints - Testing without csrf_exempt wrapper
+    path('auth/verify-email/initiate/', InitiateEmailVerificationView.as_view(), name='initiate-verification'),
+    path('auth/verify-email/resend/', ResendEmailVerificationView.as_view(), name='resend-verification'),
+    path('auth/verify-email/verify/', VerifyEmailView.as_view(), name='verify-email'),  # GET request, no CSRF needed
     
     # Admin user management
     path('', include(router.urls)),

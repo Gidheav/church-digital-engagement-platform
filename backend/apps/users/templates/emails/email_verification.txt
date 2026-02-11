@@ -1,0 +1,33 @@
+======================================
+EMAIL VERIFICATION - {{ site_name }}
+======================================
+
+Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Thank you for joining {{ site_name }}! To complete your registration and secure your account, please verify your email address.
+
+VERIFY YOUR EMAIL
+-----------------
+Click the link below or copy and paste it into your browser:
+
+{{ verification_url }}
+
+
+IMPORTANT INFORMATION
+---------------------
+⏱️ This verification link will expire in {{ expiry_minutes }} minutes.
+   Please verify your email promptly.
+
+⚠️ SECURITY NOTICE: If you did not create an account with {{ site_name }},
+   please ignore this email. Your email address will not be added to our system.
+
+
+NEED HELP?
+----------
+If you're having trouble verifying your email, please contact our support team.
+
+
+---
+{{ site_name }}
+This is an automated message. Please do not reply to this email.
+© 2026 {{ site_name }}. All rights reserved.

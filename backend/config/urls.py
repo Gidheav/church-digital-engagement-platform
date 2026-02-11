@@ -24,10 +24,14 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from .views import ReactAppView
+from apps.users.test_views import TestVerificationView  # Senior Engineer debug endpoint
 
 urlpatterns = [
     # Django Admin
     path('admin/', admin.site.urls),
+    
+    # DEBUG: Minimal test endpoint to isolate 403 issue
+    path('api/test-verify/', TestVerificationView.as_view(), name='test-verify'),
     
     # API v1 endpoints
     path('api/v1/', include([

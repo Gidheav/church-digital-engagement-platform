@@ -22,7 +22,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      withCredentials: true, // Enable sending cookies with requests
+      // withCredentials removed - using JWT tokens only, no cookies needed
     });
 
     this.setupInterceptors();
@@ -54,8 +54,15 @@ class ApiService {
 
         // Handle 403 Forbidden - role-based access denied
         if (error.response?.status === 403) {
-          // Log the unauthorized access attempt
-          console.error('Access forbidden:', error.response.data);
+          // Log the unauthorized access attempt WITH FULL DEBUG INFO
+          console.error('🚨 403 FORBIDDEN ERROR:', {
+            status: error.response.status,
+            data: error.response.data,
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            timestamp: new Date().toISOString(),
+          });
           
           // Redirect to 403 page if not already there
           if (!window.location.pathname.includes('/403')) {

@@ -3,9 +3,10 @@
  * Production-ready professional admin interface
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { UserRole } from '../types/auth.types';
+import { adminContentService } from '../services/admin-content.service';
 
 // Layout
 import AdminLayout from './layouts/AdminLayout';
@@ -158,9 +159,44 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ userRole, onNavigate }) => {
-  // TODO: Fetch real stats from backend
+  const [totalPosts, setTotalPosts] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const postsData = await adminContentService.getPosts();
+        
+        // Handle paginated response (results array) or direct array
+        let postCount = 0;
+        if (Array.isArray(postsData)) {
+          postCount = postsData.length;
+        } else if (postsData && typeof postsData === 'object') {
+          // Check if it's a paginated response
+          if ('results' in postsData) {
+            postCount = (postsData as any).results.length;
+          } else if ('count' in postsData) {
+            postCount = (postsData as any).count;
+          } else {
+            console.warn('Unexpected response structure:', postsData);
+          }
+        }
+        
+        setTotalPosts(postCount);
+        console.log('Total posts fetched:', postCount);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        setTotalPosts(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const stats = [
-    { id: 1, label: 'Total Posts', value: '0', change: '+0%', icon: <ContentIcon size={24} />, color: '#2268f5' },
+    { id: 1, label: 'Total Posts', value: loading ? '...' : String(totalPosts), change: '+0%', icon: <ContentIcon size={24} />, color: '#2268f5' },
     { id: 2, label: 'Active Members', value: '0', change: '+0%', icon: <UsersIcon size={24} />, color: '#10b981' },
     { id: 3, label: 'Pending Questions', value: '0', change: '+0%', icon: <MessageCircleIcon size={24} />, color: '#f59e0b' },
     { id: 4, label: 'Email Campaigns', value: '0', change: '+0%', icon: <MailIcon size={24} />, color: '#2268f5' },

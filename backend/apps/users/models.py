@@ -147,9 +147,35 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text='Whether user is subscribed to email campaigns'
     )
     
+    # Email verification management
     email_verified = models.BooleanField(
         default=False,
         help_text='Whether email address has been verified'
+    )
+    
+    email_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp when email was verified'
+    )
+    
+    email_verification_token = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text='Hashed email verification token'
+    )
+    
+    email_verification_token_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Expiration time for email verification token'
+    )
+    
+    email_verification_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time verification email was sent (for rate limiting)'
     )
     
     # Suspension management

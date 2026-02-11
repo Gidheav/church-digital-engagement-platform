@@ -69,28 +69,75 @@ const UserManager: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
     try {
       const data = await apiService.get('/admin/users/');
+      
+      console.log('=== RAW API RESPONSE ===');
+      console.log('Full response:', data);
+      console.log('Response type:', typeof data);
+      console.log('Is array?', Array.isArray(data));
+      
       // Handle both array response and object with results/users property
+      let usersList: User[] = [];
       if (Array.isArray(data)) {
-        setUsers(data);
+        usersList = data;
       } else if (data?.results && Array.isArray(data.results)) {
-        setUsers(data.results);
+        usersList = data.results;
       } else if (data?.users && Array.isArray(data.users)) {
-        setUsers(data.users);
+        usersList = data.users;
       } else {
         console.error('Unexpected data format:', data);
-        setUsers([]);
+        usersList = [];
       }
+      
+      // Log detailed user data
+      console.log('=== USERS DATA ===');
+      console.log('Total users:', usersList.length);
+      usersList.forEach((user, index) => {
+        const displayName = generateDisplayName(user);
+        console.log(`User ${index}: Email: ${user.email}, first_name: "${user.first_name}", last_name: "${user.last_name}", full_name: "${user.full_name}", DISPLAY: "${displayName}"`);
+      });
+      
+      setUsers(usersList);
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to generate display name with same logic as backend
+  const generateDisplayName = (user: User): string => {
+    // Try full_name first
+    if (user.full_name && user.full_name.trim()) {
+      return user.full_name;
+    }
+    
+    // Try combining first_name and last_name
+    if ((user.first_name && user.first_name.trim()) || (user.last_name && user.last_name.trim())) {
+      const combined = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      if (combined) {
+        return combined;
+      }
+    }
+    
+    // Fallback: generate from email
+    if (user.email) {
+      const emailName = user.email.split('@')[0];
+      return emailName
+        .replace(/[._-]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+        .trim() || user.email;
+    }
+    
+    return 'Unknown';
   };
 
   const handleViewUser = async (userId: string) => {
@@ -179,12 +226,15 @@ const UserManager: React.FC = () => {
       key: 'full_name',
       label: 'User',
       sortable: true,
-      render: (row) => (
-        <div className="user-cell-pro">
-          <span className="user-name-text">{row.full_name}</span>
-          <span className="user-email-text">{row.email}</span>
-        </div>
-      ),
+      render: (_value, row) => {
+        // The second parameter (row) is the full user object, not the first parameter
+        const displayName = generateDisplayName(row);
+        return (
+          <div className="user-cell-pro">
+            <span className="user-name-text">{displayName}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'role',
@@ -234,20 +284,26 @@ const UserManager: React.FC = () => {
       key: 'email_verified',
       label: 'Email Status',
       sortable: true,
-      render: (value) => {
+      render: (value, row) => {
         if (value) {
           return (
-            <span className="badge-verified verified">
-              <CheckCircleIcon />
-              Verified
-            </span>
+            <div className="email-status-cell">
+              <span className="badge-verified verified">
+                <CheckCircleIcon />
+                Verified
+              </span>
+              <span className="email-text">{row.email}</span>
+            </div>
           );
         } else {
           return (
-            <span className="badge-verified unverified">
-              <AlertCircleIcon />
-              Unverified
-            </span>
+            <div className="email-status-cell">
+              <span className="badge-verified unverified">
+                <AlertCircleIcon />
+                Unverified
+              </span>
+              <span className="email-text">{row.email}</span>
+            </div>
           );
         }
       },
