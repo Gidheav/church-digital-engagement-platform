@@ -57,7 +57,7 @@ urlpatterns = [
     # Email verification endpoints - Testing without csrf_exempt wrapper
     path('auth/verify-email/initiate/', InitiateEmailVerificationView.as_view(), name='initiate-verification'),
     path('auth/verify-email/resend/', ResendEmailVerificationView.as_view(), name='resend-verification'),
-    path('auth/verify-email/verify/', VerifyEmailView.as_view(), name='verify-email'),  # GET request, no CSRF needed
+    path('auth/verify-email/', VerifyEmailView.as_view(), name='verify-email'),  # PUBLIC GET endpoint, query: ?token=...
     
     # Admin user management
     path('', include(router.urls)),

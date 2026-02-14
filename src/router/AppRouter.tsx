@@ -12,6 +12,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { UserRole } from '../types/auth.types';
+import ToastContainer from '../components/ToastContainer';
 
 // Public pages
 import HomePage from '../public/HomePage';
@@ -19,6 +20,8 @@ import LoginPage from '../public/LoginPage';
 import RegisterPage from '../public/RegisterPage';
 import ContentList from '../public/ContentList';
 import ContentDetail from '../public/ContentDetail';
+import SeriesList from '../public/SeriesList';
+import SeriesDetail from '../public/SeriesDetail';
 import AdminAuth from '../pages/AdminAuth';
 import Forbidden from '../pages/Forbidden';
 import VerifyEmail from '../pages/VerifyEmail';
@@ -33,6 +36,7 @@ import AdminDashboard from '../admin/AdminDashboard';
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
@@ -40,6 +44,8 @@ const AppRouter: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/content" element={<ContentList />} />
         <Route path="/content/:id" element={<ContentDetail />} />
+        <Route path="/series" element={<SeriesList />} />
+        <Route path="/series/:slug" element={<SeriesDetail />} />
         
         {/* Admin Authentication (Separate from member auth) */}
         <Route path="/admin-auth" element={<AdminAuth />} />

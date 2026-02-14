@@ -4,7 +4,7 @@
  * Provides authentication state and methods throughout the application.
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { AuthState } from '../types/auth.types';
 import { authService } from '../services/auth.service';
 
@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: false,
     isLoading: true,
   });
+  const refreshInFlight = useRef(false);
 
   useEffect(() => {
     // Check for stored tokens and load user on mount
@@ -123,7 +124,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<void> => {
+    if (refreshInFlight.current) {
+      return;
+    }
+    refreshInFlight.current = true;
     try {
       if (authService.isAuthenticated()) {
         const user = await authService.getCurrentUser();
@@ -134,8 +139,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to refresh user:', error);
+    } finally {
+      refreshInFlight.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'email_verification_updated') {
+        refreshUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [refreshUser]);
 
   const value: AuthContextType = {
     ...authState,

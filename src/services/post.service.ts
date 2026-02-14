@@ -31,6 +31,13 @@ export interface Post {
   views_count: number;
   comments_count: number;
   reactions_count: number;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  // Series relationship
+  series?: string | null;  // UUID of Series
+  series_order?: number;   // Part number within series
+  series_title?: string;   // Display series title
+  series_slug?: string;    // Series slug for navigation
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +55,9 @@ export interface PostCreateData {
   featured_image?: string;
   video_url?: string;
   audio_url?: string;
+  // Series relationship
+  series?: string | null;  // UUID of Series
+  series_order?: number;   // Part number within series
 }
 
 export interface PostUpdateData extends Partial<PostCreateData> {}
@@ -91,14 +101,21 @@ class PostService {
   /**
    * Get all posts (with optional filters)
    */
-  async getAllPosts(filters?: { post_type?: string; is_published?: boolean; search?: string }): Promise<Post[]> {
+  async getAllPosts(filters?: { post_type?: string; is_published?: boolean; search?: string; is_deleted?: boolean }): Promise<Post[]> {
     const params = new URLSearchParams();
     if (filters?.post_type) params.append('post_type', filters.post_type);
     if (filters?.is_published !== undefined) params.append('is_published', String(filters.is_published));
     if (filters?.search) params.append('search', filters.search);
+    if (filters?.is_deleted !== undefined) params.append('is_deleted', String(filters.is_deleted));
 
     const response = await this.api.get(`/?${params.toString()}`);
-    return response.data;
+    
+    // Handle both paginated and non-paginated responses
+    if (response.data.results !== undefined) {
+      return response.data.results;
+    }
+    
+    return Array.isArray(response.data) ? response.data : [];
   }
 
   /**

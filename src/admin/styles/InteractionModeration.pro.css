@@ -240,6 +240,21 @@
 .filter-select option {
   background: var(--bg-primary);
   color: var(--text-primary);
+  padding: 8px;
+}
+
+[data-theme="dark"] .filter-select {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .filter-select option {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .filter-select option:checked {
+  background: #2268f5;
+  color: #ffffff;
 }
 
 /* ========================================

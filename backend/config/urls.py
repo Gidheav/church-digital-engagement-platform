@@ -40,6 +40,7 @@ urlpatterns = [
         
         # Public endpoints (no auth required)
         path('public/', include('apps.content.public_urls')),
+        path('public/', include('apps.series.public_urls')),
         
         # Comments (public read, authenticated write)
         path('', include('apps.interactions.comment_urls')),
@@ -49,6 +50,7 @@ urlpatterns = [
         path('admin/interactions/', include('apps.interactions.urls')),
         path('admin/email/', include('apps.email_campaigns.urls')),
         path('admin/moderation/', include('apps.moderation.urls')),
+        path('admin/series/', include('apps.series.urls')),
     ])),
     
     # API Documentation
@@ -63,7 +65,7 @@ if settings.DEBUG:
 
 # Serve React application for all other routes (must be last)
 # This catches all routes not matched above and forwards them to React
-# Exclude /static/ to let Whitenoise serve static files
+# CRITICAL: Exclude api/, admin/, static/, media/ from catch-all
 urlpatterns += [
-    re_path(r'^(?!static/).*$', ReactAppView.as_view(), name='react-app'),
+    re_path(r'^(?!api/|admin/|static/|media/).*$', ReactAppView.as_view(), name='react-app'),
 ]

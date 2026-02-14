@@ -4,7 +4,8 @@ Content Serializers
 from rest_framework import serializers
 from django.utils import timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import Post, PostType, PostStatus, PostContentType
+from .models import Post, PostType, PostStatus, PostContentType, Draft
+from apps.series.models import Series
 
 
 class PostContentTypeSerializer(serializers.ModelSerializer):
@@ -75,6 +76,8 @@ class PostSerializer(serializers.ModelSerializer):
     reactions_count = serializers.SerializerMethodField()
     content_type_name = serializers.CharField(source='get_content_type_name', read_only=True)
     content_type_slug = serializers.CharField(source='get_content_type_slug', read_only=True)
+    series_title = serializers.CharField(source='series.title', read_only=True, allow_null=True)
+    series_slug = serializers.CharField(source='series.slug', read_only=True, allow_null=True)
     
     class Meta:
         model = Post
@@ -83,10 +86,13 @@ class PostSerializer(serializers.ModelSerializer):
             'content_type_slug', 'author', 'author_name', 'author_email', 'is_published',
             'published_at', 'status', 'comments_enabled', 'reactions_enabled',
             'featured_image', 'video_url', 'audio_url', 'views_count', 'comments_count',
-            'reactions_count', 'is_featured', 'featured_priority', 'created_at', 'updated_at'
+            'reactions_count', 'is_featured', 'featured_priority',
+            'series', 'series_order', 'series_title', 'series_slug',
+            'is_deleted', 'deleted_at', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'author', 'views_count', 'created_at', 'updated_at',
-                           'comments_count', 'reactions_count', 'content_type_name', 'content_type_slug']
+                           'comments_count', 'reactions_count', 'content_type_name', 
+                           'content_type_slug', 'series_title', 'series_slug']
     
     def get_comments_count(self, obj):
         return obj.comments.filter(is_deleted=False).count()
@@ -108,13 +114,25 @@ class PostCreateSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    # Series relationship
+    series = serializers.PrimaryKeyRelatedField(
+        queryset=Series.objects.filter(is_deleted=False),
+        required=False,
+        allow_null=True,
+        help_text="Series this post belongs to"
+    )
+    series_order = serializers.IntegerField(
+        required=False,
+        default=0,
+        help_text="Part number within the series"
+    )
     
     class Meta:
         model = Post
         fields = [
             'title', 'content', 'post_type', 'content_type', 'status', 'comments_enabled',
             'reactions_enabled', 'featured_image', 'video_url', 'audio_url',
-            'is_featured', 'featured_priority'
+            'is_featured', 'featured_priority', 'series', 'series_order'
         ]
     
     def create(self, validated_data):
@@ -139,13 +157,19 @@ class PostUpdateSerializer(serializers.ModelSerializer):
     Serializer for updating posts
     Protects published_at from being overwritten
     """
+    series = serializers.PrimaryKeyRelatedField(
+        queryset=Series.objects.filter(is_deleted=False),
+        required=False,
+        allow_null=True,
+        help_text="Series this post belongs to"
+    )
     
     class Meta:
         model = Post
         fields = [
             'title', 'content', 'post_type', 'comments_enabled',
             'reactions_enabled', 'featured_image', 'video_url', 'audio_url',
-            'is_featured', 'featured_priority'
+            'is_featured', 'featured_priority', 'series', 'series_order'
         ]
         # Explicitly exclude published_at from updates
         read_only_fields = ['published_at']
@@ -171,16 +195,18 @@ class PostPublishSerializer(serializers.Serializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing posts"""
+    author = serializers.CharField(source='author.id', read_only=True)
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_email = serializers.CharField(source='author.email', read_only=True)
     comments_count = serializers.SerializerMethodField()
     reactions_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'post_type', 'author_name', 'is_published',
-            'published_at', 'status', 'views_count', 'comments_count', 'reactions_count',
-            'is_featured', 'featured_priority', 'created_at'
+            'id', 'title', 'post_type', 'author', 'author_name', 'author_email', 
+            'is_published', 'published_at', 'status', 'views_count', 'comments_count', 
+            'reactions_count', 'is_featured', 'featured_priority', 'is_deleted', 'deleted_at', 'created_at'
         ]
     
     def get_comments_count(self, obj):
@@ -188,3 +214,123 @@ class PostListSerializer(serializers.ModelSerializer):
     
     def get_reactions_count(self, obj):
         return obj.reactions.count()
+
+
+class DraftSerializer(serializers.ModelSerializer):
+    """Serializer for Draft model - list/retrieve operations"""
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    content_type_name = serializers.CharField(source='content_type.name', read_only=True, allow_null=True)
+    post_title = serializers.CharField(source='post.title', read_only=True, allow_null=True)
+    preview = serializers.SerializerMethodField()
+    time_since_save = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Draft
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'post', 'post_title',
+            'draft_title', 'draft_data', 'content_type', 'content_type_name',
+            'version', 'is_published_draft', 'created_at', 'last_autosave_at',
+            'preview', 'time_since_save'
+        ]
+        read_only_fields = ['id', 'user', 'version', 'created_at', 'last_autosave_at']
+    
+    def get_preview(self, obj):
+        """Get content preview"""
+        return obj.get_preview(max_length=100)
+    
+    def get_time_since_save(self, obj):
+        """Human-readable time since last save"""
+        from django.utils.timesince import timesince
+        if obj.last_autosave_at:
+            return timesince(obj.last_autosave_at) + " ago"
+        return "Never"
+
+
+class DraftCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating drafts"""
+    content_type = serializers.PrimaryKeyRelatedField(
+        queryset=PostContentType.objects.filter(is_enabled=True),
+        required=False,
+        allow_null=True
+    )
+    post = serializers.PrimaryKeyRelatedField(
+        queryset=Post.objects.all(),
+        required=False,
+        allow_null=True,
+        help_text="Linked post if editing existing content"
+    )
+    
+    class Meta:
+        model = Draft
+        fields = ['post', 'draft_data', 'content_type']
+    
+    def validate_draft_data(self, value):
+        """Ensure draft_data is a valid dictionary"""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("draft_data must be a JSON object")
+        return value
+    
+    def create(self, validated_data):
+        """Create draft with current user"""
+        # User is set by the view from request.user
+        return super().create(validated_data)
+
+
+class DraftUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating/auto-saving drafts"""
+    content_type = serializers.PrimaryKeyRelatedField(
+        queryset=PostContentType.objects.filter(is_enabled=True),
+        required=False,
+        allow_null=True
+    )
+    
+    class Meta:
+        model = Draft
+        fields = ['draft_data', 'content_type']
+    
+    def validate_draft_data(self, value):
+        """Ensure draft_data is a valid dictionary"""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("draft_data must be a JSON object")
+        return value
+    
+    def update(self, instance, validated_data):
+        """Update draft - version auto-increments in model's save()"""
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        
+        # Extract title from draft_data for easier identification
+        if 'draft_data' in validated_data and isinstance(validated_data['draft_data'], dict):
+            title = validated_data['draft_data'].get('title', '')
+            if title:
+                instance.draft_title = title[:255]
+        
+        instance.save()
+        return instance
+
+
+class DraftListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for listing drafts"""
+    content_type_name = serializers.CharField(source='content_type.name', read_only=True, allow_null=True)
+    post_title = serializers.CharField(source='post.title', read_only=True, allow_null=True)
+    preview = serializers.SerializerMethodField()
+    time_since_save = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Draft
+        fields = [
+            'id', 'draft_title', 'content_type_name', 'post_title',
+            'version', 'last_autosave_at', 'preview', 'time_since_save'
+        ]
+    
+    def get_preview(self, obj):
+        """Get short content preview"""
+        return obj.get_preview(max_length=80)
+    
+    def get_time_since_save(self, obj):
+        """Human-readable time since last save"""
+        from django.utils.timesince import timesince
+        if obj.last_autosave_at:
+            return timesince(obj.last_autosave_at) + " ago"
+        return "Never"

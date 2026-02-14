@@ -98,6 +98,9 @@ export {
   Type as TypeIcon,
   MessageSquare as MessageSquareIcon,
   Heart as HeartIcon,
+  Star as StarIcon,
+  List as ListIcon,
+  BookOpen as BookOpen,
 } from 'lucide-react';
 
 // Table Icons

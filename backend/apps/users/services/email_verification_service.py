@@ -64,7 +64,7 @@ class EmailVerificationService:
     VERIFICATION_URL_TEMPLATE = getattr(
         settings,
         'EMAIL_VERIFICATION_URL',
-        '{protocol}://{domain}/verify-email?token={token}'
+        '{protocol}://{domain}/api/v1/auth/verify-email/?token={token}'
     )
     
     RESEND_COOLDOWN_SECONDS = 60  # 1 minute between resends
@@ -174,20 +174,117 @@ class EmailVerificationService:
         return cls.initiate_verification(user, request)
     
     @classmethod
-    def verify_email(cls, user: User, token: str) -> Dict[str, Any]:
+    def verify_email_by_token(cls, raw_token: str) -> Dict[str, Any]:
         """
-        Verify email using provided token.
+        PUBLIC EMAIL VERIFICATION - Find user by token and verify email.
+        
+        This method is used for public verification links (no authentication).
+        The token itself identifies the user.
         
         Validation steps:
-        1. Check if already verified
-        2. Verify token exists
-        3. Check token expiration
-        4. Validate token matches
-        5. Update user as verified
-        6. Invalidate token
+        1. Find user with non-expired token
+        2. Verify token hash matches
+        3. Check if already verified
+        4. Update user as verified
+        5. Invalidate token (prevent reuse)
         
         Args:
-            user: User instance
+            raw_token: Raw verification token from email URL
+            
+        Returns:
+            Dict with success status, message, email, and verified_at timestamp
+            
+        Raises:
+            TokenExpiredError: If token has expired
+            InvalidTokenError: If token is invalid or doesn't match any user
+            AlreadyVerifiedError: If email already verified
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if not raw_token:
+            raise InvalidTokenError("No token provided")
+        
+        logger.info(f"[VERIFY] Attempting verification with token: {raw_token[:10]}...")
+        
+        # Find users with non-expired tokens and unverified emails
+        candidate_users = User.objects.filter(
+            email_verification_token__isnull=False,
+            email_verification_token_expires_at__gt=timezone.now(),
+            email_verified=False
+        )
+        
+        logger.info(f"[VERIFY] Found {candidate_users.count()} candidate users with active tokens")
+        
+        # Find the user whose hashed token matches the raw token
+        user = None
+        for candidate in candidate_users:
+            if TokenService.verify_token(raw_token, candidate.email_verification_token):
+                user = candidate
+                logger.info(f"[VERIFY] Token matched for user: {user.email}")
+                break
+        
+        if not user:
+            # Check if token exists but is expired
+            expired_users = User.objects.filter(
+                email_verification_token__isnull=False,
+                email_verification_token_expires_at__lte=timezone.now(),
+                email_verified=False
+            )
+            
+            for expired_user in expired_users:
+                if TokenService.verify_token(raw_token, expired_user.email_verification_token):
+                    logger.info(f"[VERIFY] Expired token attempt for user: {expired_user.email}")
+                    raise TokenExpiredError(
+                        "Verification link has expired. Please request a new one."
+                    )
+            
+            logger.warning(f"[VERIFY] Invalid token - no matching user found")
+            raise InvalidTokenError(
+                "Invalid verification link. Please request a new one."
+            )
+        
+        # Double-check if already verified (edge case)
+        if user.email_verified:
+            logger.info(f"[VERIFY] Email already verified for user: {user.email}")
+            raise AlreadyVerifiedError("Email is already verified")
+        
+        # Mark as verified
+        user.email_verified = True
+        user.email_verified_at = timezone.now()
+        
+        # Clear token fields (security - prevent reuse)
+        user.email_verification_token = None
+        user.email_verification_token_expires_at = None
+        user.email_verification_sent_at = None
+        
+        user.save(update_fields=[
+            'email_verified',
+            'email_verified_at',
+            'email_verification_token',
+            'email_verification_token_expires_at',
+            'email_verification_sent_at'
+        ])
+        
+        logger.info(f"[SUCCESS] Email verified successfully for user: {user.email}")
+        
+        return {
+            'success': True,
+            'message': 'Email verified successfully',
+            'email': user.email,
+            'verified_at': user.email_verified_at.isoformat()
+        }
+    
+    @classmethod
+    def verify_email(cls, user: User, token: str) -> Dict[str, Any]:
+        """
+        AUTHENTICATED EMAIL VERIFICATION - Verify email for logged-in user.
+        
+        This method is for authenticated users who have the token.
+        Use verify_email_by_token() for public verification links.
+        
+        Args:
+            user: Authenticated User instance
             token: Raw verification token from URL
             
         Returns:
@@ -219,11 +316,13 @@ class EmailVerificationService:
         user.email_verified_at = timezone.now()
         user.email_verification_token = None
         user.email_verification_token_expires_at = None
+        user.email_verification_sent_at = None
         user.save(update_fields=[
             'email_verified',
             'email_verified_at',
             'email_verification_token',
-            'email_verification_token_expires_at'
+            'email_verification_token_expires_at',
+            'email_verification_sent_at'
         ])
         
         return {
@@ -266,6 +365,16 @@ class EmailVerificationService:
             user: User instance
             verification_url: Complete verification URL with token
         """
+        from django.conf import settings
+        
+        print(f"\n[EMAIL SEND] ===== EMAIL SENDING PROCESS =====")
+        print(f"[EMAIL SEND] Recipient: {user.email}")
+        print(f"[EMAIL SEND] Verification URL: {verification_url}")
+        print(f"[EMAIL SEND] EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+        print(f"[EMAIL SEND] EMAIL_HOST: {getattr(settings, 'EMAIL_HOST', 'NOT SET')}")
+        print(f"[EMAIL SEND] EMAIL_HOST_USER: {getattr(settings, 'EMAIL_HOST_USER', 'NOT SET')}")
+        print(f"[EMAIL SEND] DEFAULT_FROM_EMAIL: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'NOT SET')}")
+        
         site_name = getattr(settings, 'SITE_NAME', 'Our Platform')
         
         # Email context
@@ -275,6 +384,8 @@ class EmailVerificationService:
             'site_name': site_name,
             'expiry_minutes': TokenService.DEFAULT_EXPIRY_MINUTES,
         }
+        
+        print(f"[EMAIL SEND] Rendering email templates...")
         
         # Render HTML and plain text versions
         html_message = render_to_string(
@@ -286,12 +397,39 @@ class EmailVerificationService:
             context
         )
         
+        print(f"[EMAIL SEND] Templates rendered successfully")
+        print(f"[EMAIL SEND] HTML length: {len(html_message)} chars")
+        print(f"[EMAIL SEND] Plain text length: {len(plain_message)} chars")
+        
         # Send email
-        send_mail(
-            subject=f'Verify your email - {site_name}',
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
+        subject = f'Verify your email - {site_name}'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        
+        print(f"[EMAIL SEND] Calling send_mail()...")
+        print(f"[EMAIL SEND]   Subject: {subject}")
+        print(f"[EMAIL SEND]   From: {from_email}")
+        print(f"[EMAIL SEND]   To: {recipient_list}")
+        print(f"[EMAIL SEND]   HTML: {'Yes' if html_message else 'No'}")
+        
+        try:
+            result = send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=from_email,
+                recipient_list=recipient_list,
+                html_message=html_message,
+                fail_silently=False,
+            )
+            
+            print(f"[EMAIL SEND] send_mail() returned: {result}")
+            print(f"[EMAIL SEND] SUCCESS - Email sent successfully")
+            print(f"[EMAIL SEND] ==========================================\n")
+            
+        except Exception as e:
+            print(f"[EMAIL SEND] ERROR - Failed to send email: {e}")
+            print(f"[EMAIL SEND] Error type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            print(f"[EMAIL SEND] ==========================================\n")
+            raise

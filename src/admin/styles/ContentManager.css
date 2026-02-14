@@ -93,6 +93,37 @@
   line-height: 1;
 }
 
+/* Tabs */
+.content-tabs-pro {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.content-tab {
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.content-tab:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-300);
+}
+
+.content-tab.active {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+  color: #ffffff;
+}
+
 /* Filters Row */
 .filters-row-pro {
   display: flex;
@@ -126,6 +157,21 @@
 .filter-select option {
   background: var(--bg-primary);
   color: var(--text-primary);
+  padding: 8px;
+}
+
+[data-theme="dark"] .filter-select {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .filter-select option {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .filter-select option:checked {
+  background: #2268f5;
+  color: #ffffff;
 }
 
 /* Post Title Cell */

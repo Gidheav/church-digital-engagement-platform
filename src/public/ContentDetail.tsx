@@ -124,6 +124,21 @@ const ContentDetail: React.FC = () => {
           <span className="content-date">{formatDate(post.published_at)}</span>
         </div>
 
+        {/* Series Navigation */}
+        {(post as any).series_slug && (
+          <div className="series-navigation-box">
+            <div className="series-breadcrumb">
+              📚 Part {(post as any).series_order} of{' '}
+              <Link to={`/series/${(post as any).series_slug}`} className="series-link">
+                {(post as any).series_title}
+              </Link>
+            </div>
+            <Link to={`/series/${(post as any).series_slug}`} className="view-full-series-btn">
+              View Full Series →
+            </Link>
+          </div>
+        )}
+
         {post.featured_image && (
           <div className="content-featured-image">
             <img src={post.featured_image} alt={post.title} />

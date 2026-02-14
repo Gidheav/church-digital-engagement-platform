@@ -84,6 +84,54 @@
   color: #999;
 }
 
+/* Series Navigation Box */
+.series-navigation-box {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  border: 2px solid #87ceeb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 20px 0 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.series-breadcrumb {
+  font-size: 15px;
+  color: #1e3a8a;
+  font-weight: 500;
+}
+
+.series-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.series-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.view-full-series-btn {
+  padding: 8px 16px;
+  background: #87ceeb;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.view-full-series-btn:hover {
+  background: #4facfe;
+  transform: translateX(2px);
+}
+
 .content-featured-image {
   margin: 24px 0;
   border-radius: 8px;

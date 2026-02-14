@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { UserRole } from '../types/auth.types';
 import { adminContentService } from '../services/admin-content.service';
@@ -13,6 +14,7 @@ import AdminLayout from './layouts/AdminLayout';
 
 // Page Components
 import ContentManager from './ContentManager';
+import SeriesManager from './SeriesManager';
 import UserManager from './UserManager';
 import InteractionModeration from './InteractionModeration';
 import InteractionDetailModal from './InteractionDetailModal';
@@ -30,6 +32,7 @@ import {
   ChartBarIcon,
   ArrowRightIcon
 } from './components/Icons';
+import DraftsWidget from '../components/DraftsWidget';
 
 // Styles
 import './styles/theme.modern.css';
@@ -37,13 +40,17 @@ import './styles/AdminDashboard.pro.css';
 
 import { Interaction } from '../services/interaction.service';
 
-type AdminView = 'overview' | 'content' | 'users' | 'moderation' | 'email' | 'reports' | 'settings';
+type AdminView = 'overview' | 'content' | 'series' | 'users' | 'moderation' | 'email' | 'reports' | 'settings';
+type ContentTab = 'ALL' | 'PUBLISHED' | 'DRAFTS' | 'TRASH';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [activeView, setActiveView] = useState<AdminView>('overview');
   const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
+  const [initialContentTab, setInitialContentTab] = useState<ContentTab>('ALL');
 
   const handleViewChange = (view: string) => {
     const adminView = view as AdminView;
@@ -74,10 +81,34 @@ const AdminDashboard: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    const draftId = params.get('draftId');
+    const tab = params.get('tab');
+
+    if (view && ['overview', 'content', 'series', 'users', 'moderation', 'email', 'reports', 'settings'].includes(view)) {
+      handleViewChange(view);
+    } else if (draftId || tab) {
+      handleViewChange('content');
+    }
+
+    if (draftId) {
+      setInitialDraftId(draftId);
+    }
+
+    if (tab && ['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'].includes(tab)) {
+      setInitialContentTab(tab as ContentTab);
+    }
+  }, [location.search]);
+
   const renderView = () => {
     switch (activeView) {
       case 'content':
-        return <ContentManager />;
+        return <ContentManager initialDraftId={initialDraftId} initialTab={initialContentTab} />;
+        
+      case 'series':
+        return <SeriesManager />;
         
       case 'users':
         if (user?.role !== UserRole.ADMIN) {
@@ -273,6 +304,11 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ userRole, onNavig
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* Recent Drafts Widget */}
+      <div className="section-pro">
+        <DraftsWidget />
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   HomeIcon,
   LogoutIcon,
   XIcon,
+  FolderIcon,
 } from '../components/Icons';
 import './Sidebar.css';
 import '../styles/theme.modern.css';
@@ -41,6 +42,7 @@ interface NavItem {
 const navigationItems: NavItem[] = [
   { id: 'overview', label: 'Dashboard', icon: DashboardIcon, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
   { id: 'content', label: 'Content', icon: ContentIcon, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+  { id: 'series', label: 'Series', icon: FolderIcon, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
   { id: 'users', label: 'Users', icon: UsersIcon, roles: [UserRole.ADMIN] },
   { id: 'moderation', label: 'Moderation', icon: ModerationIcon, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
   { id: 'email', label: 'Email Campaigns', icon: EmailIcon, roles: [UserRole.ADMIN, UserRole.MODERATOR] },

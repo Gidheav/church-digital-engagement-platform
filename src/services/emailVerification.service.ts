@@ -12,6 +12,8 @@ export interface EmailVerificationResponse {
   message: string;
   expires_in_minutes?: number;
   verified_at?: string;
+  email?: string;
+  code?: string;
 }
 
 export interface RateLimitError {
@@ -141,13 +143,40 @@ class EmailVerificationService {
 
   /**
    * Verify email with token from email link
+   * PUBLIC ENDPOINT - No authentication required
+   * Token is sent as query parameter
    */
   async verifyEmail(token: string): Promise<EmailVerificationResponse> {
-    const response: AxiosResponse<EmailVerificationResponse> = await api.post(
-      '/auth/verify-email/verify/',
-      { token }
-    );
-    return response.data;
+    try {
+      console.log('[DEBUG] VERIFYING EMAIL TOKEN:', token.substring(0, 10) + '...');
+      
+      // PUBLIC GET endpoint - token in query params
+      const response: AxiosResponse<any> = await api.get(
+        `/auth/verify-email/?token=${encodeURIComponent(token)}`
+      );
+      
+      console.log('[DEBUG] VERIFICATION RESPONSE:', response.data);
+      
+      return {
+        success: response.data.success !== false,
+        message: response.data.message || 'Email verified successfully',
+        email: response.data.email,
+        verified_at: response.data.verified_at
+      };
+    } catch (error: any) {
+      console.error('[ERROR] VERIFICATION FAILED:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        code: error.response?.data?.code
+      });
+      
+      // Extract error details
+      const errorData = error.response?.data || {};
+      const enhancedError: any = new Error(errorData.message || 'Verification failed');
+      enhancedError.response = error.response;
+      enhancedError.code = errorData.code;
+      throw enhancedError;
+    }
   }
 }
 

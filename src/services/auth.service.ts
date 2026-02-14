@@ -16,6 +16,21 @@ import {
   RegisterRequest 
 } from '../types/auth.types';
 
+const normalizeUser = (user: any): User => ({
+  id: user.id,
+  email: user.email,
+  firstName: user.firstName ?? user.first_name ?? '',
+  lastName: user.lastName ?? user.last_name ?? '',
+  role: user.role,
+  isActive: user.isActive ?? user.is_active ?? false,
+  dateJoined: user.dateJoined ?? user.date_joined ?? '',
+  phoneNumber: user.phoneNumber ?? user.phone_number,
+  profilePicture: user.profilePicture ?? user.profile_picture,
+  bio: user.bio,
+  emailVerified: user.emailVerified ?? user.email_verified,
+  emailVerifiedAt: user.emailVerifiedAt ?? user.email_verified_at ?? null,
+});
+
 class AuthService {
   /**
    * User login
@@ -35,7 +50,7 @@ class AuthService {
     }
     
     return {
-      user: response.user,
+      user: normalizeUser(response.user),
       tokens: {
         access: response.access,
         refresh: response.refresh
@@ -62,7 +77,7 @@ class AuthService {
     }
     
     return {
-      user: response.user,
+      user: normalizeUser(response.user),
       tokens: {
         access: response.access,
         refresh: response.refresh
@@ -90,7 +105,8 @@ class AuthService {
    * Get current user profile
    */
   async getCurrentUser(): Promise<User> {
-    return await apiService.get('/auth/me/');
+    const user = await apiService.get('/auth/me/');
+    return normalizeUser(user);
   }
 
   /**

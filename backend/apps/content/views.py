@@ -71,8 +71,9 @@ class AdminPostViewSet(viewsets.ModelViewSet):
     
     def update(self, request, *args, **kwargs):
         """
-        Override update to add role-based ownership check and error logging
-        Moderators can only update their own posts
+        Override update to:
+        1. Add role-based ownership check (moderators can only update their own)
+        2. Return full serialized response with all fields (including series_title, etc.)
         """
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -88,7 +89,10 @@ class AdminPostViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         self.perform_update(serializer)
-        return Response(serializer.data)
+        
+        # Return full serialized response using PostSerializer
+        output_serializer = PostSerializer(instance)
+        return Response(output_serializer.data)
     
     def destroy(self, request, *args, **kwargs):
         """
@@ -108,7 +112,14 @@ class AdminPostViewSet(viewsets.ModelViewSet):
         - ADMIN: See all posts
         - MODERATOR: See only their own posts
         """
-        queryset = Post.objects.filter(is_deleted=False)
+        queryset = Post.objects.all()
+
+        # Filter by deleted status (default: exclude deleted)
+        is_deleted = self.request.query_params.get('is_deleted')
+        if is_deleted is None:
+            queryset = queryset.filter(is_deleted=False)
+        else:
+            queryset = queryset.filter(is_deleted=is_deleted.lower() == 'true')
         
         # Role-based filtering
         from apps.users.models import UserRole

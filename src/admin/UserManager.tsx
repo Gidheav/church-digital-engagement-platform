@@ -28,7 +28,8 @@ interface User {
   full_name: string;
   role: 'MEMBER' | 'MODERATOR';
   is_suspended: boolean;
-  email_verified: boolean;
+  email_verified?: boolean;
+  emailVerified?: boolean;
   email_subscribed: boolean;
   date_joined: string;
   last_login: string | null;
@@ -72,6 +73,10 @@ const UserManager: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    console.log(`[FILTER STATE CHANGED] Role: "${roleFilter}", Status: "${statusFilter}", Verified: "${verifiedFilter}"`);
+  }, [roleFilter, statusFilter, verifiedFilter]);
+
   const fetchUsers = async () => {
     try {
       const data = await apiService.get('/admin/users/');
@@ -94,12 +99,22 @@ const UserManager: React.FC = () => {
         usersList = [];
       }
       
-      // Log detailed user data
-      console.log('=== USERS DATA ===');
+      // Normalize user data - ensure is_suspended is always a boolean
+      usersList = usersList.map(user => ({
+        ...user,
+        is_suspended: Boolean(user.is_suspended) // Ensure it's a boolean
+      }));
+      
+      // Log detailed user data including is_suspended
+      console.log('=== USERS DATA (AFTER NORMALIZATION) ===');
       console.log('Total users:', usersList.length);
       usersList.forEach((user, index) => {
-        const displayName = generateDisplayName(user);
-        console.log(`User ${index}: Email: ${user.email}, first_name: "${user.first_name}", last_name: "${user.last_name}", full_name: "${user.full_name}", DISPLAY: "${displayName}"`);
+        console.log(`User ${index}: ${user.email}`);
+        console.log(`  - first_name: "${user.first_name}", last_name: "${user.last_name}", full_name: "${user.full_name}"`);
+        console.log(`  - is_suspended: ${user.is_suspended} (type: ${typeof user.is_suspended})`);
+        console.log(`  - role: ${user.role}`);
+        console.log(`  - email_verified: ${user.email_verified}, emailVerified: ${user.emailVerified}`);
+        console.log(`  - FULL OBJECT:`, user);
       });
       
       setUsers(usersList);
@@ -180,7 +195,7 @@ const UserManager: React.FC = () => {
           payload.action = 'unsuspend';
         }
 
-        await apiService.put(`/admin/users/${selectedUser.id}/`, payload);
+        await apiService.patch(`/admin/users/${selectedUser.id}/`, payload);
         await fetchUsers();
         setShowDetailModal(false);
         resetActionForm();
@@ -205,14 +220,44 @@ const UserManager: React.FC = () => {
     }
   };
 
+  const getEmailVerified = (user: User): boolean => {
+    if (typeof user.email_verified === 'boolean') return user.email_verified;
+    if (typeof user.emailVerified === 'boolean') return user.emailVerified;
+    return false;
+  };
+
   const filteredUsers = Array.isArray(users) ? users.filter((user) => {
-    if (roleFilter && user.role !== roleFilter) return false;
-    if (statusFilter === 'active' && user.is_suspended) return false;
-    if (statusFilter === 'suspended' && !user.is_suspended) return false;
-    if (verifiedFilter === 'verified' && !user.email_verified) return false;
-    if (verifiedFilter === 'unverified' && user.email_verified) return false;
+    const isVerified = getEmailVerified(user);
+    
+    if (roleFilter && user.role !== roleFilter) {
+      return false;
+    }
+    
+    if (statusFilter === 'active' && user.is_suspended) {
+      return false;
+    }
+    
+    if (statusFilter === 'suspended' && !user.is_suspended) {
+      return false;
+    }
+    
+    if (verifiedFilter === 'verified' && !isVerified) {
+      return false;
+    }
+    
+    if (verifiedFilter === 'unverified' && isVerified) {
+      return false;
+    }
+    
     return true;
   }) : [];
+
+  console.log(`[FILTER RESULT] Total: ${users.length} → Filtered: ${filteredUsers.length} (role="${roleFilter}" status="${statusFilter}" verified="${verifiedFilter}"`);
+  if (filteredUsers.length === 0 && users.length > 0) {
+    console.warn('[FILTER WARNING] No users match the current filters!');
+    console.log('Suspended users in data:', users.filter(u => u.is_suspended).length);
+    console.log('Active users in data:', users.filter(u => !u.is_suspended).length);
+  }
 
   const stats = {
     total: Array.isArray(users) ? users.length : 0,
@@ -284,15 +329,15 @@ const UserManager: React.FC = () => {
       key: 'email_verified',
       label: 'Email Status',
       sortable: true,
-      render: (value, row) => {
-        if (value) {
+      render: (_value, row) => {
+        const isVerified = getEmailVerified(row);
+        if (isVerified) {
           return (
             <div className="email-status-cell">
               <span className="badge-verified verified">
                 <CheckCircleIcon />
                 Verified
               </span>
-              <span className="email-text">{row.email}</span>
             </div>
           );
         } else {
@@ -302,7 +347,6 @@ const UserManager: React.FC = () => {
                 <AlertCircleIcon />
                 Unverified
               </span>
-              <span className="email-text">{row.email}</span>
             </div>
           );
         }
@@ -378,7 +422,9 @@ const UserManager: React.FC = () => {
           <FilterIcon size={16} />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+            }}
             className="filter-select"
           >
             <option value="">All Status</option>
@@ -454,7 +500,7 @@ const UserManager: React.FC = () => {
                   <div className="info-field">
                     <div className="info-label">Email Status</div>
                     <div className="info-value">
-                      {selectedUser.email_verified ? (
+                      {getEmailVerified(selectedUser) ? (
                         <span className="badge-verified verified">
                           <CheckCircleIcon />
                           Verified
@@ -513,10 +559,17 @@ const UserManager: React.FC = () => {
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value as 'MEMBER' | 'MODERATOR')}
                       className="control-select"
+                      disabled={!getEmailVerified(selectedUser)}
                     >
                       <option value="MEMBER">Member</option>
                       <option value="MODERATOR">Moderator</option>
                     </select>
+                    {!getEmailVerified(selectedUser) && (
+                      <div className="field-info-text">
+                        <AlertCircleIcon size={14} />
+                        Email must be verified before assigning moderator role
+                      </div>
+                    )}
                   </div>
 
                   <div className="control-field">

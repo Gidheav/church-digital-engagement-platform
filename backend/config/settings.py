@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     'apps.interactions',
     'apps.email_campaigns',
     'apps.moderation',
+    'apps.series',
 ]
 
 MIDDLEWARE = [
@@ -344,19 +345,45 @@ MEDIA_ROOT = config('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
 
 
 # ==============================================================================
-# EMAIL CONFIGURATION
+# EMAIL CONFIGURATION - FORCE SMTP PRODUCTION MODE
 # ==============================================================================
 
-EMAIL_BACKEND = config(
-    'EMAIL_BACKEND',
-    default='django.core.mail.backends.console.EmailBackend'
-)
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@example.com')
+import os
+from pathlib import Path  
+
+# CRITICAL: Load .env file explicitly
+env_path = Path(__file__).resolve().parent.parent / '.env'
+if env_path.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(dotenv_path=env_path)
+        print(f"[SETTINGS] Loaded .env from: {env_path}")
+    except ImportError:
+        print(f"[SETTINGS] WARNING: python-dotenv not installed, skipping .env file")
+else:
+    print(f"[SETTINGS] WARNING: .env file not found at: {env_path}")
+
+# FORCE SMTP BACKEND - NO CONDITIONALS
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'www.heavresearcher.247@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'rmcepvmmdrbdtprl')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Church Digital Platform <www.heavresearcher.247@gmail.com>')
+EMAIL_TIMEOUT = 30
+
+# CRITICAL DEBUG - Print loaded configuration
+print("\n" + "="*80)
+print("[EMAIL CONFIG] EMAIL CONFIGURATION LOADED:")
+print(f"[EMAIL CONFIG]   BACKEND: {EMAIL_BACKEND}")
+print(f"[EMAIL CONFIG]   HOST: {EMAIL_HOST}")
+print(f"[EMAIL CONFIG]   PORT: {EMAIL_PORT}")
+print(f"[EMAIL CONFIG]   USER: {EMAIL_HOST_USER}")
+print(f"[EMAIL CONFIG]   FROM: {DEFAULT_FROM_EMAIL}")
+print(f"[EMAIL CONFIG]   PASSWORD SET: {'Yes' if EMAIL_HOST_PASSWORD else 'No'}")
+print(f"[EMAIL CONFIG]   TLS: {EMAIL_USE_TLS}")
+print("="*80 + "\n")
 
 
 

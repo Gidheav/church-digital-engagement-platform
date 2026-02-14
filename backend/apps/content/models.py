@@ -125,6 +125,21 @@ class Post(models.Model):
         related_name='posts'
     )
     
+    # Series relationship
+    series = models.ForeignKey(
+        'series.Series',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='posts',
+        help_text="Series this post belongs to (optional)"
+    )
+    
+    series_order = models.IntegerField(
+        default=0,
+        help_text="Order/part number within the series (e.g., Part 1, Part 2)"
+    )
+    
     # Publishing
     is_published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -171,6 +186,7 @@ class Post(models.Model):
             models.Index(fields=['post_type', '-created_at']),
             models.Index(fields=['is_published', '-published_at']),
             models.Index(fields=['is_featured', '-featured_priority']),
+            models.Index(fields=['series', 'series_order']),
         ]
     
     def __str__(self):
@@ -363,3 +379,120 @@ class Interaction(models.Model):
         """Soft delete the interaction"""
         self.is_deleted = True
         self.save(update_fields=['is_deleted', 'updated_at'])
+
+
+class Draft(models.Model):
+    """
+    Auto-save drafts for post creation/editing
+    Prevents data loss from browser crashes, network issues, or accidental navigation
+    
+    Features:
+    - Auto-saves every 30 seconds and on typing pause
+    - Multiple drafts per user (different posts)
+    - Drafts can be linked to existing posts (editing) or standalone (new posts)
+    - Auto-cleanup after configurable retention period
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Ownership
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='drafts',
+        help_text="User who owns this draft"
+    )
+    
+    # Post relationship (null if creating new post, not null if editing existing)
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='drafts',
+        help_text="Linked post if editing existing content"
+    )
+    
+    # Draft metadata
+    draft_title = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Working title for identification"
+    )
+    
+    # Draft content (JSON field storing the full form state)
+    draft_data = models.JSONField(
+        help_text="Complete form state including title, content, settings, etc."
+    )
+    
+    # Content type
+    content_type = models.ForeignKey(
+        PostContentType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='drafts',
+        help_text="Content type of this draft"
+    )
+    
+    # Version tracking
+    version = models.IntegerField(
+        default=1,
+        help_text="Auto-increment on each save for future version history"
+    )
+    
+    # Status flags
+    is_published_draft = models.BooleanField(
+        default=False,
+        help_text="Whether this draft is for content that was previously published"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_autosave_at = models.DateTimeField(auto_now=True, db_index=True)
+    
+    class Meta:
+        ordering = ['-last_autosave_at']
+        verbose_name = "Draft"
+        verbose_name_plural = "Drafts"
+        indexes = [
+            models.Index(fields=['user', '-last_autosave_at']),
+            models.Index(fields=['post', 'user']),
+            models.Index(fields=['-last_autosave_at']),
+        ]
+        # Ensure only one draft per user per post (when editing existing post)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'post'],
+                condition=models.Q(post__isnull=False),
+                name='unique_user_post_draft'
+            )
+        ]
+    
+    def __str__(self):
+        if self.post:
+            return f"Draft for '{self.post.title}' by {self.user.email}"
+        return f"New draft '{self.draft_title}' by {self.user.email}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-increment version on each save"""
+        if self.pk:
+            # Existing draft - increment version
+            self.version += 1
+        else:
+            # New draft - extract title from draft_data for identification
+            if isinstance(self.draft_data, dict) and 'title' in self.draft_data:
+                self.draft_title = self.draft_data['title'][:255]
+        
+        super().save(*args, **kwargs)
+    
+    def get_preview(self, max_length=100):
+        """Get content preview for display in draft list"""
+        if isinstance(self.draft_data, dict):
+            content = self.draft_data.get('content', '')
+            # Strip HTML tags for preview
+            import re
+            text = re.sub('<[^<]+?>', '', content)
+            if len(text) > max_length:
+                return text[:max_length] + '...'
+            return text
+        return ""
