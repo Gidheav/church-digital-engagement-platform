@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { Card } from '../../shared/components/Card';
 import {
@@ -14,12 +15,9 @@ import {
   ArrowRightIcon,
 } from '../../shared/components/Icons';
 
-interface MemberOverviewProps {
-  onViewChange: (view: string) => void;
-}
-
-const MemberOverview: React.FC<MemberOverviewProps> = ({ onViewChange }) => {
+const MemberOverview: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const stats = [
     { id: 1, label: 'New Sermons', value: '3', change: '+2 this week', icon: <BookIcon size={24} />, color: '#2268f5' },
@@ -55,6 +53,10 @@ const MemberOverview: React.FC<MemberOverviewProps> = ({ onViewChange }) => {
     },
   ];
 
+  const handleNavigate = (actionId: string) => {
+    navigate(`/member/${actionId}`);
+  };
+
   return (
     <div className="dashboard-pro">
       {/* Stats Grid */}
@@ -78,7 +80,7 @@ const MemberOverview: React.FC<MemberOverviewProps> = ({ onViewChange }) => {
         <h2 className="section-title-pro">Quick Actions</h2>
         <div className="actions-grid-pro">
           {quickActions.map(action => (
-            <Card key={action.id} className="action-card-pro" onClick={() => onViewChange(action.id)}>
+            <Card key={action.id} className="action-card-pro" onClick={() => handleNavigate(action.id)}>
               <div className="action-icon-pro">{action.icon}</div>
               <h3 className="action-title-pro">{action.label}</h3>
               <p className="action-desc-pro">{action.description}</p>

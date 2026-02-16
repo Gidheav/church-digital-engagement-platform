@@ -25,7 +25,6 @@ import './MemberSidebar.css';
 
 interface SidebarProps {
   activeView: string;
-  onViewChange: (view: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -46,7 +45,7 @@ const memberNavigationItems: NavItem[] = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-const MemberSidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isOpen, onClose }) => {
+const MemberSidebar: React.FC<SidebarProps> = ({ activeView, isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -56,7 +55,9 @@ const MemberSidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isOpe
   };
 
   const handleNavigation = (view: string) => {
-    onViewChange(view);
+    // Navigate to the member sub-route
+    const path = view === 'overview' ? '/member' : `/member/${view}`;
+    navigate(path);
     onClose(); // Close mobile drawer after navigation
   };
 

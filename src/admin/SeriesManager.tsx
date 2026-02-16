@@ -7,8 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { UserRole } from '../types/auth.types';
-import seriesService from '../services/series.service';
-import { Series, SeriesVisibility } from '../types/series.types';
+import seriesService, { Series, SeriesVisibility } from '../services/series.service';
 import DataTable, { Column, StatusBadge, ActionMenu } from './components/DataTable';
 import { Card } from './components/Card';
 import {
@@ -55,7 +54,7 @@ const SeriesManager: React.FC = () => {
   const canModifySeries = (series: Series): boolean => {
     if (user?.role === UserRole.ADMIN) return true;
     if (user?.role === UserRole.MODERATOR) {
-      return series.author === user.id;
+      return series.author.id === user.id;
     }
     return false;
   };
@@ -252,27 +251,26 @@ const SeriesManager: React.FC = () => {
 
         {/* Filters */}
         <div className="series-filters">
-          <div className="filter-group">
-            <label>
+          <div className="filter-wrapper">
+            <div className="filter-icon">
               <FilterIcon size={16} />
-              <span>Visibility</span>
-            </label>
+            </div>
             <select
               value={filterVisibility}
               onChange={(e) => setFilterVisibility(e.target.value)}
               className="filter-select"
             >
-              <option value="">All</option>
+              <option value="">All Visibility</option>
               <option value="PUBLIC">Public</option>
               <option value="MEMBERS_ONLY">Members Only</option>
               <option value="HIDDEN">Hidden</option>
             </select>
           </div>
 
-          <div className="filter-group">
-            <label>
-              <span>Featured</span>
-            </label>
+          <div className="filter-wrapper">
+            <div className="filter-icon">
+              <FilterIcon size={16} />
+            </div>
             <select
               value={filterFeatured === null ? '' : String(filterFeatured)}
               onChange={(e) => {
@@ -281,7 +279,7 @@ const SeriesManager: React.FC = () => {
               }}
               className="filter-select"
             >
-              <option value="">All</option>
+              <option value="">All Featured</option>
               <option value="true">Featured Only</option>
               <option value="false">Not Featured</option>
             </select>

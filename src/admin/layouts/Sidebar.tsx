@@ -27,7 +27,6 @@ import '../styles/theme.modern.css';
 
 interface SidebarProps {
   activeView: string;
-  onViewChange: (view: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -50,7 +49,7 @@ const navigationItems: NavItem[] = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon, roles: [UserRole.ADMIN] },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -60,7 +59,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isOpen, onC
   };
 
   const handleNavigation = (view: string) => {
-    onViewChange(view);
+    // Navigate to the admin sub-route
+    const path = view === 'overview' ? '/admin' : `/admin/${view}`;
+    navigate(path);
     onClose(); // Close mobile drawer after navigation
   };
 

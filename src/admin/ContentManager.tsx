@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { UserRole } from '../types/auth.types';
@@ -24,11 +25,6 @@ import './styles/ContentManager.css';
 
 type ViewMode = 'list' | 'create' | 'edit';
 type ContentTab = 'ALL' | 'PUBLISHED' | 'DRAFTS' | 'TRASH';
-
-interface ContentManagerProps {
-  initialDraftId?: string | null;
-  initialTab?: ContentTab;
-}
 
 type ContentRow = {
   id: string;
@@ -54,9 +50,10 @@ type ContentRow = {
   last_autosave_at?: string; // For drafts only
 };
 
-const ContentManager: React.FC<ContentManagerProps> = ({ initialDraftId = null, initialTab = 'ALL' }) => {
+const ContentManager: React.FC = () => {
   const { user } = useAuth();
   const { confirm } = useConfirm();
+  const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null);
@@ -67,9 +64,20 @@ const ContentManager: React.FC<ContentManagerProps> = ({ initialDraftId = null, 
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [filterType, setFilterType] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<ContentTab>(initialTab);
+  const [activeTab, setActiveTab] = useState<ContentTab>('ALL');
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [appliedDraftId, setAppliedDraftId] = useState<string | null>(null);
+
+  // Read initial values from query parameters
+  const initialDraftId = searchParams.get('draftId');
+  const initialTab = (searchParams.get('tab') as ContentTab) || 'ALL';
+
+  useEffect(() => {
+    // Set initial tab from query params
+    if (initialTab && ['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'].includes(initialTab)) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   useEffect(() => {
     loadPosts();
@@ -622,23 +630,26 @@ const ContentManager: React.FC<ContentManagerProps> = ({ initialDraftId = null, 
         </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="content-tabs-pro">
-        {(['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'] as ContentTab[]).map((tab) => (
-          <button
-            key={tab}
-            className={`content-tab ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {/* Tabs and Filter Row */}
+      <div className="tabs-filter-row">
+        {/* Tabs - Left Aligned */}
+        <div className="content-tabs-pro">
+          {(['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'] as ContentTab[]).map((tab) => (
+            <button
+              key={tab}
+              className={`content-tab ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
-      {/* Filters */}
-      <div className="filters-row-pro">
-        <div className="filter-group">
-          <FilterIcon size={16} />
+        {/* Filter - Right Aligned */}
+        <div className="filter-wrapper">
+          <div className="filter-icon">
+            <FilterIcon size={16} />
+          </div>
           <select
             className="filter-select"
             value={filterType}

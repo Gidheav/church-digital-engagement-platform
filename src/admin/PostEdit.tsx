@@ -7,8 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import postService, { PostUpdateData } from '../services/post.service';
 import contentTypeService, { ContentType } from '../services/contentType.service';
-import seriesService from '../services/series.service';
-import { Series } from '../types/series.types';
+import seriesService, { Series } from '../services/series.service';
 import { useConfirm } from '../contexts/ConfirmContext';
 import RichTextEditor from '../components/RichTextEditor';
 import { 

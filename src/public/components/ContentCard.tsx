@@ -74,13 +74,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
               loading="lazy"
             />
           ) : (
-            <div className={`card-media-placeholder ${post.type.toLowerCase()}`}>
-              {post.type === 'SERMON' && (
+            <div className={`card-media-placeholder ${post.post_type.toLowerCase()}`}>
+              {post.post_type === 'SERMON' && (
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
               )}
-              {post.type === 'ARTICLE' && (
+              {post.post_type === 'ARTICLE' && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14,2 14,8 20,8"/>
@@ -89,12 +89,12 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   <polyline points="10,9 9,9 8,9"/>
                 </svg>
               )}
-              {post.type === 'ANNOUNCEMENT' && (
+              {post.post_type === 'ANNOUNCEMENT' && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
               )}
-              {(post.type === 'DEVOTIONAL' || post.type === 'TESTIMONY') && (
+              {post.post_type === 'DEVOTIONAL' && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                   <path d="M2 17l10 5 10-5"/>
@@ -105,7 +105,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
           )}
           
           {/* Play indicator for sermons */}
-          {post.type === 'SERMON' && post.featured_image && (
+          {post.post_type === 'SERMON' && post.featured_image && (
             <div className="card-play-indicator">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
@@ -117,8 +117,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
         {/* Content */}
         <div className="card-body">
           <div className="card-meta">
-            <span className={getTypeClass(post.type)}>
-              {getTypeLabel(post.type)}
+            <span className={getTypeClass(post.post_type)}>
+              {getTypeLabel(post.post_type)}
             </span>
             <span className="card-date">{formatDate(post.published_at)}</span>
           </div>

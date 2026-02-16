@@ -8,10 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import postService, { PostCreateData } from '../services/post.service';
 import contentTypeService, { ContentType } from '../services/contentType.service';
-import seriesService from '../services/series.service';
-import { Series } from '../types/series.types';
+import seriesService, { Series } from '../services/series.service';
 import RichTextEditor from '../components/RichTextEditor';
-import AutoSaveIndicator from '../components/AutoSaveIndicator';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useAuth } from '../auth/AuthContext';
 import draftService, { Draft } from '../services/draft.service';
@@ -48,7 +46,8 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDra
   
   const [contentTypes, setContentTypes] = useState<ContentType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Start sidebar closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth > 1024 : true);
   const [formData, setFormData] = useState<PostCreateData>({
     title: '',
     content: '',
@@ -97,7 +96,6 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDra
   const {
     status: autoSaveStatus,
     lastSaved,
-    error: autoSaveError,
     saveDraft,
     forceSave,
     deleteDraft,
@@ -682,10 +680,47 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDra
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Content */}
             <div className="form-section-desktop">
-              <h3 className="section-title">
-                <MessageSquareIcon className="icon" />
-                Content
-              </h3>
+              <div className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquareIcon className="icon" />
+                  Content
+                </h3>
+                
+                {/* Save Status Indicator */}
+                <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {autoSaveStatus === 'saving' && (
+                    <span style={{ color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{
+                        animation: 'spin 1s linear infinite',
+                        borderRadius: '50%',
+                        height: '12px',
+                        width: '12px',
+                        border: '2px solid transparent',
+                        borderTop: '2px solid currentColor'
+                      }}></div>
+                      Saving...
+                    </span>
+                  )}
+                  
+                  {autoSaveStatus === 'saved' && lastSaved && (
+                    <span style={{ color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg style={{ height: '12px', width: '12px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      All changes saved (just now)
+                    </span>
+                  )}
+                  
+                  {autoSaveStatus === 'error' && (
+                    <span style={{ color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg style={{ height: '12px', width: '12px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Save failed
+                    </span>
+                  )}
+                </div>
+              </div>
 
               <RichTextEditor
                 key={initialDraftId || 'new-content'}
@@ -749,19 +784,6 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDra
                   disabled={loading}
                   className="form-input-desktop"
                 />
-                <div style={{ 
-                  marginTop: '8px', 
-                  padding: '8px 12px', 
-                  background: '#eff6ff', 
-                  borderRadius: '6px',
-                  borderLeft: '3px solid #2563eb',
-                  fontSize: '12px',
-                  color: '#1e40af',
-                  lineHeight: '1.5'
-                }}>
-                  <strong>💡 Auto-Save:</strong> Your work is automatically saved after 1 second of inactivity.
-                  Save triggered with just 5 characters. No title? No problem - we'll call it "Untitled Draft".
-                </div>
               </div>
 
               <div className="sidebar-form-group">
@@ -1055,97 +1077,6 @@ const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDra
           onCreate={handleQuickCreateSeries}
         />
       )}
-
-      {/* Auto-Save Indicator */}
-      <AutoSaveIndicator 
-        status={autoSaveStatus} 
-        lastSaved={lastSaved} 
-        error={autoSaveError} 
-      />
-
-      {/* FIX #5: Visual Save Status Indicator */}
-      <div className="fixed bottom-4 right-4 z-50">
-        {autoSaveStatus === 'saving' && (
-          <div style={{
-            background: '#dbeafe',
-            color: '#1e40af',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px'
-          }}>
-            <div style={{
-              animation: 'spin 1s linear infinite',
-              borderRadius: '50%',
-              height: '16px',
-              width: '16px',
-              border: '2px solid transparent',
-              borderTop: '2px solid currentColor'
-            }}></div>
-            <span>Saving draft...</span>
-          </div>
-        )}
-        
-        {autoSaveStatus === 'saved' && lastSaved && (
-          <div style={{
-            background: '#dcfce7',
-            color: '#166534',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px'
-          }}>
-            <svg style={{ height: '16px', width: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Saved at {lastSaved.toLocaleTimeString()}</span>
-          </div>
-        )}
-        
-        {autoSaveStatus === 'error' && (
-          <div style={{
-            background: '#fee2e2',
-            color: '#991b1b',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px'
-          }}>
-            <svg style={{ height: '16px', width: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span>Save failed - try manually</span>
-          </div>
-        )}
-        
-        {autoSaveStatus === 'offline' && (
-          <div style={{
-            background: '#fef3c7',
-            color: '#92400e',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px'
-          }}>
-            <svg style={{ height: '16px', width: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.332a9 9 0 11-4.08-15.364" />
-            </svg>
-            <span>Offline - saving locally</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

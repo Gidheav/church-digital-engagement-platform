@@ -5,8 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import seriesService from '../services/series.service';
-import { SeriesDetail as SeriesDetailType } from '../types/series.types';
+import seriesService, { SeriesDetail as SeriesDetailType } from '../services/series.service';
 import './styles/SeriesDetail.css';
 
 const SeriesDetail: React.FC = () => {
@@ -98,7 +97,7 @@ const SeriesDetail: React.FC = () => {
             <p className="series-description">{series.description}</p>
           )}
           <div className="series-meta">
-            <span className="series-author">by {series.author_name}</span>
+            <span className="series-author">by {series.author.full_name}</span>
             <span className="series-post-count">
               {series.post_count} {series.post_count === 1 ? 'post' : 'posts'}
             </span>

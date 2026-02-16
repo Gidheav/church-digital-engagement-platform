@@ -8,6 +8,7 @@ import interactionService, { Interaction, InteractionStats } from '../services/i
 import { useConfirm } from '../contexts/ConfirmContext';
 import DataTable, { Column, StatusBadge, ActionMenu } from './components/DataTable';
 import { Card } from './components/Card';
+import InteractionDetailModal from './InteractionDetailModal';
 import {
   MessageCircleIcon,
   CheckCircleIcon,
@@ -24,20 +25,20 @@ import {
 import './styles/InteractionModeration.pro.css';
 import './styles/ContentManager.css';
 
-interface InteractionModerationProps {
-  onViewDetails: (interaction: Interaction) => void;
-}
-
 type TabType = 'questions' | 'comments' | 'flagged';
 type StatusFilterType = '' | 'OPEN' | 'ANSWERED' | 'CLOSED' | 'PENDING' | 'REVIEWED';
 
-const InteractionModeration: React.FC<InteractionModerationProps> = ({ onViewDetails }) => {
+const InteractionModeration: React.FC = () => {
   const { confirm } = useConfirm();
   
   // Data state
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [stats, setStats] = useState<InteractionStats | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Modal state
+  const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Filter state
   const [activeTab, setActiveTab] = useState<TabType>('questions');
@@ -46,7 +47,7 @@ const InteractionModeration: React.FC<InteractionModerationProps> = ({ onViewDet
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, statusFilter]);
+  }, [activeTab, statusFilter, refreshTrigger]);
 
   const loadData = async () => {
     try {
@@ -249,7 +250,7 @@ const InteractionModeration: React.FC<InteractionModerationProps> = ({ onViewDet
       {
         label: 'View Details',
         icon: <EyeIcon size={16} />,
-        onClick: () => onViewDetails(row),
+        onClick: () => setSelectedInteraction(row),
       },
       {
         label: 'Approve',
@@ -411,6 +412,15 @@ const InteractionModeration: React.FC<InteractionModerationProps> = ({ onViewDet
         searchPlaceholder="Search by content, user, or post..."
         emptyMessage="No interactions found"
       />
+
+      {/* Interaction Detail Modal */}
+      {selectedInteraction && (
+        <InteractionDetailModal
+          interactionId={selectedInteraction.id}
+          onClose={() => setSelectedInteraction(null)}
+          onUpdate={() => setRefreshTrigger(prev => prev + 1)}
+        />
+      )}
     </div>
   );
 };

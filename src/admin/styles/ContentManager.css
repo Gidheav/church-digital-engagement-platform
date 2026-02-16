@@ -93,6 +93,15 @@
   line-height: 1;
 }
 
+/* Tabs and Filter Row - Combined */
+.tabs-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
 /* Tabs */
 .content-tabs-pro {
   display: flex;
@@ -124,34 +133,41 @@
   color: #ffffff;
 }
 
-/* Filters Row */
-.filters-row-pro {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.filter-group {
+.filter-wrapper {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 10px var(--space-3);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+}
+
+.filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-tertiary);
 }
 
 .filter-select {
-  background: none;
-  border: none;
+  padding: 10px var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
-  min-width: 120px;
+  min-width: 140px;
+  transition: all var(--transition-fast);
+}
+
+.filter-select:hover {
+  border-color: var(--primary-300);
+  background: var(--bg-primary);
+}
+
+.filter-select:focus {
+  border-color: var(--primary-500);
+  background: var(--bg-primary);
 }
 
 .filter-select option {
@@ -160,13 +176,16 @@
   padding: 8px;
 }
 
+/* Dark mode support for filter select */
 [data-theme="dark"] .filter-select {
   color-scheme: dark;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .filter-select option {
-  background: #1e293b;
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .filter-select option:checked {

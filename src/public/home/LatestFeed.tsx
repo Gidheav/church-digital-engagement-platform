@@ -54,8 +54,8 @@ const LatestFeed: React.FC<LatestFeedProps> = ({ posts }) => {
               className="feed-item"
             >
               <div className="feed-header">
-                <span className={`feed-badge ${getTypeBadgeClass(post.type)}`}>
-                  {getTypeLabel(post.type)}
+                <span className={`feed-badge ${getTypeBadgeClass(post.post_type)}`}>
+                  {getTypeLabel(post.post_type)}
                 </span>
                 <span className="feed-date">{formatDate(post.published_at)}</span>
               </div>

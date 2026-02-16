@@ -4,19 +4,29 @@
  */
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AdminTopBar from './AdminTopBar';
 import './AdminLayout.css';
 
 interface AdminLayoutProps {
   children?: React.ReactNode;
-  activeView?: string;
-  onViewChange?: (view: string) => void;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeView, onViewChange }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Determine active view from current route
+  const getActiveView = () => {
+    const path = location.pathname;
+    if (path === '/admin' || path === '/admin/') {
+      return 'overview';
+    }
+    // Extract view from /admin/{view}
+    const match = path.match(/^\/admin\/([^\/]+)/);
+    return match ? match[1] : 'overview';
+  };
 
   const handleMenuClick = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -26,21 +36,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeView, onViewC
     setIsSidebarOpen(false);
   };
 
-  const handleViewChange = (view: string) => {
-    if (onViewChange) {
-      onViewChange(view);
-    }
-    // Close sidebar on mobile after navigation
-    if (window.innerWidth < 1024) {
-      setIsSidebarOpen(false);
-    }
-  };
-
   return (
     <div className="admin-layout-pro">
       <Sidebar
-        activeView={activeView || 'overview'}
-        onViewChange={handleViewChange}
+        activeView={getActiveView()}
         isOpen={isSidebarOpen}
         onClose={handleSidebarClose}
       />

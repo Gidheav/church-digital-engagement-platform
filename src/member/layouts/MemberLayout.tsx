@@ -5,19 +5,29 @@
  */
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
 import MemberTopBar from './MemberTopBar';
 import './MemberLayout.css';
 
 interface MemberLayoutProps {
   children?: React.ReactNode;
-  activeView?: string;
-  onViewChange?: (view: string) => void;
 }
 
-const MemberLayout: React.FC<MemberLayoutProps> = ({ children, activeView, onViewChange }) => {
+const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Determine active view from current route
+  const getActiveView = () => {
+    const path = location.pathname;
+    if (path === '/member' || path === '/member/') {
+      return 'overview';
+    }
+    // Extract view from /member/{view}
+    const match = path.match(/^\/member\/([^\/]+)/);
+    return match ? match[1] : 'overview';
+  };
 
   const handleMenuClick = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -27,21 +37,10 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children, activeView, onVie
     setIsSidebarOpen(false);
   };
 
-  const handleViewChange = (view: string) => {
-    if (onViewChange) {
-      onViewChange(view);
-    }
-    // Close sidebar on mobile after navigation
-    if (window.innerWidth < 1024) {
-      setIsSidebarOpen(false);
-    }
-  };
-
   return (
     <div className="member-layout">
       <MemberSidebar
-        activeView={activeView || 'overview'}
-        onViewChange={handleViewChange}
+        activeView={getActiveView()}
         isOpen={isSidebarOpen}
         onClose={handleSidebarClose}
       />

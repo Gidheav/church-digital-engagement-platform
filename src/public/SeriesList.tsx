@@ -5,8 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import seriesService from '../services/series.service';
-import { Series } from '../types/series.types';
+import seriesService, { Series } from '../services/series.service';
 import './styles/SeriesList.css';
 
 const SeriesList: React.FC = () => {
@@ -113,7 +112,7 @@ const SeriesList: React.FC = () => {
                   <span className="series-post-count">
                     {item.post_count || 0} {item.post_count === 1 ? 'post' : 'posts'}
                   </span>
-                  <span className="series-author">by {item.author_name}</span>
+                  <span className="series-author">by {item.author.full_name}</span>
                 </div>
               </div>
             </div>

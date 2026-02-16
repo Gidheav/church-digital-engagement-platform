@@ -27,11 +27,26 @@ import Forbidden from '../pages/Forbidden';
 import VerifyEmail from '../pages/VerifyEmail';
 
 // Member pages
-import MemberDashboard from '../member/MemberDashboard';
+import MemberOverview from '../member/views/MemberOverview';
+import MemberSermons from '../member/views/MemberSermons';
+import MemberEvents from '../member/views/MemberEvents';
+import MemberCommunity from '../member/views/MemberCommunity';
+import MemberPrayer from '../member/views/MemberPrayer';
+import MemberProfile from '../member/views/MemberProfile';
 import MemberSettings from '../member/MemberSettings';
+import MemberLayout from '../member/layouts/MemberLayout';
 
 // Admin pages
 import AdminDashboard from '../admin/AdminDashboard';
+import ContentManager from '../admin/ContentManager';
+import SeriesManager from '../admin/SeriesManager';
+import UserManager from '../admin/UserManager';
+import InteractionModeration from '../admin/InteractionModeration';
+import EmailCampaigns from '../admin/EmailCampaigns';
+import ModerationReports from '../admin/ModerationReports';
+import AppSettings from '../admin/AppSettings';
+import AdminLayout from '../admin/layouts/AdminLayout';
+import AdminOnlyRoute from '../admin/components/AdminOnlyRoute';
 
 const AppRouter: React.FC = () => {
   return (
@@ -60,34 +75,44 @@ const AppRouter: React.FC = () => {
           } 
         />
         
-        {/* Member Routes */}
+        {/* Member Routes - Nested routing */}
         <Route 
           path="/member" 
           element={
             <ProtectedRoute>
-              <MemberDashboard />
+              <MemberLayout />
             </ProtectedRoute>
-          } 
-        />
+          }
+        >
+          <Route index element={<MemberOverview />} />
+          <Route path="dashboard" element={<MemberOverview />} />
+          <Route path="sermons" element={<MemberSermons />} />
+          <Route path="events" element={<MemberEvents />} />
+          <Route path="community" element={<MemberCommunity />} />
+          <Route path="prayer" element={<MemberPrayer />} />
+          <Route path="profile" element={<MemberProfile />} />
+          <Route path="settings" element={<MemberSettings />} />
+        </Route>
         
-        <Route 
-          path="/member/settings" 
-          element={
-            <ProtectedRoute>
-              <MemberSettings />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Admin Routes (ADMIN and MODERATOR access) */}
+        {/* Admin Routes (ADMIN and MODERATOR access) - Nested routing */}
         <Route 
           path="/admin" 
           element={
             <ProtectedRoute requiredRole={[UserRole.ADMIN, UserRole.MODERATOR]}>
-              <AdminDashboard />
+              <AdminLayout />
             </ProtectedRoute>
-          } 
-        />
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="content" element={<ContentManager />} />
+          <Route path="series" element={<SeriesManager />} />
+          <Route path="users" element={<AdminOnlyRoute><UserManager /></AdminOnlyRoute>} />
+          <Route path="moderation" element={<InteractionModeration />} />
+          <Route path="email" element={<EmailCampaigns />} />
+          <Route path="reports" element={<ModerationReports />} />
+          <Route path="settings" element={<AdminOnlyRoute><AppSettings /></AdminOnlyRoute>} />
+        </Route>
         
         {/* Error Pages */}
         <Route path="/403" element={<Forbidden />} />

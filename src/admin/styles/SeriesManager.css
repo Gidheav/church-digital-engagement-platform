@@ -42,6 +42,20 @@
   flex-wrap: wrap;
 }
 
+/* Filter wrapper - icon + select grouped together */
+.filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary, #9ca3af);
+}
+
 .filter-group {
   display: flex;
   flex-direction: column;
@@ -65,15 +79,37 @@
   border-radius: 6px;
   font-size: 14px;
   color: var(--text-primary, #1f2937);
-  background-color: white;
-  transition: border-color 0.2s;
+  background-color: var(--bg-secondary, white);
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: var(--primary-300, #93c5fd);
+  background-color: var(--bg-primary, #ffffff);
 }
 
 .filter-select:focus,
 .filter-input:focus {
   outline: none;
-  border-color: var(--primary-color, #87ceeb);
-  box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.1);
+  border-color: var(--primary-500, #3b82f6);
+  background-color: var(--bg-primary, #ffffff);
+}
+
+/* Dark mode support for filters */
+[data-theme="dark"] .filter-select {
+  color-scheme: dark;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-select option:checked {
+  background: #2268f5;
+  color: #ffffff;
 }
 
 .filter-search {

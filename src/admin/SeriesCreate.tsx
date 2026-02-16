@@ -4,8 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import seriesService from '../services/series.service';
-import { SeriesCreateData, SERIES_VISIBILITY_OPTIONS } from '../types/series.types';
+import seriesService, { SeriesCreateData, SERIES_VISIBILITY_OPTIONS } from '../services/series.service';
 import {
   XIcon,
   SaveIcon,

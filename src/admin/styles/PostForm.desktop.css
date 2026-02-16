@@ -718,8 +718,23 @@
     flex-direction: column;
   }
 
+  /* Change content layout to column (stack vertically) */
+  .post-form-content-desktop {
+    flex-direction: column;
+  }
+
+  /* Main content takes full width on mobile */
+  .post-form-main-desktop {
+    max-width: 100%;
+    width: 100%;
+    padding: 20px;
+  }
+
+  /* Sidebar becomes full width and stacks below content */
   .post-form-sidebar-desktop {
     width: 100%;
+    height: auto;
+    position: relative;
     border-left: none;
     border-top: 1px solid var(--border-color);
   }
@@ -729,7 +744,7 @@
   }
 
   .post-form-sidebar-content {
-    max-height: 400px;
+    max-height: 70vh;
   }
 
   .post-form-sidebar-content.hidden {
@@ -765,11 +780,18 @@
   .post-form-sidebar-content {
     padding: 16px;
     gap: 20px;
+    max-height: 60vh;
+  }
+
+  /* Ensure sidebar is fully collapsed by default on mobile */
+  .post-form-sidebar-content.hidden {
+    display: none;
   }
 
   .form-actions-desktop {
     padding: 16px;
     flex-direction: column-reverse;
+    gap: 12px;
   }
 
   .form-actions-desktop button {
@@ -805,5 +827,14 @@
 
   .modal-desktop {
     max-width: 100%;
+  }
+
+  /* Improve sidebar section spacing on mobile */
+  .sidebar-section {
+    padding-bottom: 16px;
+  }
+
+  .sidebar-form-group {
+    margin-bottom: 12px;
   }
 }

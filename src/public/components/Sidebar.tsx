@@ -115,9 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {announcement.excerpt.substring(0, 60)}...
                   </p>
                 )}
-                {announcement.type && (
-                  <span className={`announcement-badge badge-${announcement.type.toLowerCase()}`}>
-                    {announcement.type.replace('_', ' ')}
+                {announcement.post_type && (
+                  <span className={`announcement-badge badge-${announcement.post_type.toLowerCase()}`}>
+                    {announcement.post_type.replace('_', ' ')}
                   </span>
                 )}
               </Link>
@@ -202,8 +202,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     loading="lazy"
                   />
                 ) : (
-                  <div className={`recent-post-thumb-placeholder ${post.type.toLowerCase()}`}>
-                    {post.type === 'SERMON' && (
+                  <div className={`recent-post-thumb-placeholder ${post.post_type.toLowerCase()}`}>
+                    {post.post_type === 'SERMON' && (
                       <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z"/>
                       </svg>

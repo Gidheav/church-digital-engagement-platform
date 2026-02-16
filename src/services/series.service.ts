@@ -1,22 +1,139 @@
 /**
- * Series Service
- * Admin API for managing series
+ * Series Service - Premium Edition
+ * Handles series-specific data operations and management
  */
-
 import axios, { AxiosInstance } from 'axios';
-import {
-  Series,
-  SeriesDetail,
-  SeriesPost,
-  SeriesCreateData,
-  SeriesUpdateData,
-  AddPostToSeriesData,
-  RemovePostFromSeriesData,
-  ReorderSeriesPostsData,
-} from '../types/series.types';
 
 const API_URL = 'http://localhost:8000/api/v1/admin/series';
 const PUBLIC_API_URL = 'http://localhost:8000/api/v1/public/series';
+
+// Enhanced interfaces for series
+export interface SeriesAuthor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  profile_picture?: string;
+  full_name: string;
+}
+
+export type SeriesVisibility = 'PUBLIC' | 'MEMBERS_ONLY' | 'HIDDEN';
+
+export interface SeriesPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  published_at: string;
+  series_order: number;
+  featured_image?: string;
+  video_url?: string;
+  audio_url?: string;
+  views_count: number;
+  reactions_count: number;
+  comments_count: number;
+  post_type: 'SERMON' | 'ANNOUNCEMENT' | 'ARTICLE' | 'DEVOTIONAL';
+  
+  // Additional properties for compatibility
+  content_type_name: string;
+  author_name: string;
+  is_published: boolean;
+  created_at: string;
+}
+
+export interface Series {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  cover_image?: string;
+  
+  // Author information
+  author: SeriesAuthor;
+  
+  // Visibility and features
+  visibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'HIDDEN';
+  is_featured: boolean;
+  featured_priority: number;
+  
+  // Content organization
+  posts: SeriesPost[];
+  post_count: number;
+  published_post_count: number;
+  
+  // Analytics
+  total_views: number;
+  total_reactions: number;
+  total_comments: number;
+  average_rating?: number;
+  
+  // Publishing
+  is_active: boolean;
+  started_at?: string;
+  completed_at?: string;
+  
+  // Metadata
+  created_at: string;
+  updated_at: string;
+  
+  // Computed properties
+  duration_estimate?: string;
+  completion_percentage?: number;
+  last_updated?: string;
+}
+
+export interface SeriesDetail extends Series {
+  next_part_number: number;
+}
+
+export interface SeriesCreateData {
+  title: string;
+  description?: string;
+  cover_image?: string;
+  visibility?: SeriesVisibility;
+  is_featured?: boolean;
+  featured_priority?: number;
+}
+
+export interface SeriesUpdateData extends Partial<SeriesCreateData> {}
+
+export interface AddPostToSeriesData {
+  post_id: string;
+  series_order?: number;
+}
+
+export interface RemovePostFromSeriesData {
+  post_id: string;
+}
+
+export interface ReorderSeriesPostsData {
+  post_orders: Array<{
+    post_id: string;
+    order: number;
+  }>;
+}
+
+export const SERIES_VISIBILITY_OPTIONS = [
+  { value: 'PUBLIC', label: 'Public' },
+  { value: 'MEMBERS_ONLY', label: 'Members Only' },
+  { value: 'HIDDEN', label: 'Hidden' },
+];
+
+export interface SeriesListResponse {
+  count: number;
+  next?: string;
+  previous?: string;
+  results: Series[];
+}
+
+export interface SeriesFilters {
+  featured?: boolean;
+  visibility?: 'PUBLIC' | 'MEMBERS_ONLY';
+  author?: string;
+  search?: string;
+  ordering?: 'title' | 'created_at' | 'featured_priority' | 'total_views';
+  page?: number;
+  page_size?: number;
+}
 
 class SeriesService {
   private api: AxiosInstance;

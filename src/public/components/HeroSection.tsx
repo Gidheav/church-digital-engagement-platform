@@ -83,7 +83,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ featured, announcements = [] 
                 <div className="hero-card-overlay" />
                 
                 {/* Play button for sermons */}
-                {featured.type === 'SERMON' && (
+                {featured.post_type === 'SERMON' && (
                   <div className="hero-play-btn">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8 5v14l11-7z"/>
@@ -94,8 +94,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ featured, announcements = [] 
 
               <div className="hero-card-content">
                 <div className="hero-card-meta">
-                  <span className={getTypeClass(featured.type)}>
-                    {getTypeLabel(featured.type)}
+                  <span className={getTypeClass(featured.post_type)}>
+                    {getTypeLabel(featured.post_type)}
                   </span>
                   <span className="hero-card-date">
                     {formatDate(featured.published_at)}
@@ -142,8 +142,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ featured, announcements = [] 
                   </div>
                   
                   <div className="secondary-card-content">
-                    <span className={getTypeClass(item.type)}>
-                      {getTypeLabel(item.type)}
+                    <span className={getTypeClass(item.post_type)}>
+                      {getTypeLabel(item.post_type)}
                     </span>
                     <h3 className="secondary-card-title">{item.title}</h3>
                     <span className="secondary-card-date">
