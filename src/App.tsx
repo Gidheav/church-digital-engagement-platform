@@ -14,7 +14,13 @@ const App: React.FC = () => {
     <AuthProvider>
       <ToastProvider>
         <ConfirmProvider>
-          <AppRouter />
+          {/* Global Background Grain Overlay */}
+          <div className="fixed inset-0 pointer-events-none z-[1] bg-grain opacity-40 mix-blend-multiply" aria-hidden="true"></div>
+          
+          {/* App Content */}
+          <div className="relative z-[2]">
+            <AppRouter />
+          </div>
         </ConfirmProvider>
       </ToastProvider>
     </AuthProvider>

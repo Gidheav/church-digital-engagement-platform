@@ -49,6 +49,8 @@ export interface Series {
   
   // Author information
   author: SeriesAuthor;
+  author_name?: string;
+  author_email?: string;
   
   // Visibility and features
   visibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'HIDDEN';

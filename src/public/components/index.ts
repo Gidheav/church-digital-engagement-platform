@@ -5,16 +5,8 @@
 
 // Navigation
 export { default as PublicNavigation } from './PublicNavigation';
+export { default as MegaMenu } from './MegaMenu';
 
 // Layout
 export { default as PublicFooter } from './PublicFooter';
 
-// Hero & Featured
-export { default as HeroSection } from './HeroSection';
-
-// Content
-export { default as ContentCard } from './ContentCard';
-export { default as ContentGrid } from './ContentGrid';
-
-// Sidebar
-export { default as Sidebar } from './Sidebar';

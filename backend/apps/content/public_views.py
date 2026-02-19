@@ -51,6 +51,11 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
                 # Fallback to old post_type field
                 queryset = queryset.filter(post_type=type_param.upper())
         
+        # Filter by category
+        category_param = self.request.query_params.get('category')
+        if category_param and category_param.lower() != 'all':
+            queryset = queryset.filter(category__iexact=category_param)
+        
         return queryset.order_by('-published_at')
     
     def retrieve(self, request, *args, **kwargs):

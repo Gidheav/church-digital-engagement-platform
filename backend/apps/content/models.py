@@ -140,6 +140,14 @@ class Post(models.Model):
         help_text="Order/part number within the series (e.g., Part 1, Part 2)"
     )
     
+    # Category/Topic classification
+    category = models.CharField(
+        max_length=50,
+        blank=True,
+        default='Faith',
+        help_text="Content category/topic (e.g., Mental Health, Prayer, Marriage)"
+    )
+    
     # Publishing
     is_published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)

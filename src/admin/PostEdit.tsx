@@ -27,6 +27,7 @@ import {
   ChevronDownIcon,
 } from './components/Icons';
 import './styles/PostForm.desktop.css';
+import ImageUploadInput from './components/ImageUploadInput';
 
 interface PostEditProps {
   postId: string;
@@ -473,22 +474,11 @@ const PostEdit: React.FC<PostEditProps> = ({ postId, onSuccess, onCancel }) => {
               </h4>
 
               <div className="sidebar-form-group">
-                <label htmlFor="featured_image">
-                  Featured Image
-                  <span className="tooltip-trigger">
-                    <span className="tooltip-icon">?</span>
-                    <span className="tooltip-content">Image URL to display with post</span>
-                  </span>
-                </label>
-                <input
-                  type="url"
-                  id="featured_image"
-                  name="featured_image"
+                <label>Featured Image</label>
+                <ImageUploadInput
                   value={formData.featured_image || ''}
-                  onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
+                  onChange={(url) => setFormData(prev => ({ ...prev, featured_image: url }))}
                   disabled={loading}
-                  className="form-input-desktop"
                 />
               </div>
 

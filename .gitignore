@@ -124,3 +124,10 @@ coverage/
 nosetests.xml
 coverage.xml
 test-reports/
+
+node_modules
+dist
+build
+.next
+coverage
+*.map

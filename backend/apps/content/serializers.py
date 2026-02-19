@@ -87,7 +87,7 @@ class PostSerializer(serializers.ModelSerializer):
             'published_at', 'status', 'comments_enabled', 'reactions_enabled',
             'featured_image', 'video_url', 'audio_url', 'views_count', 'comments_count',
             'reactions_count', 'is_featured', 'featured_priority',
-            'series', 'series_order', 'series_title', 'series_slug',
+            'series', 'series_order', 'series_title', 'series_slug', 'category',
             'is_deleted', 'deleted_at', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'author', 'views_count', 'created_at', 'updated_at',
@@ -132,7 +132,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
         fields = [
             'title', 'content', 'post_type', 'content_type', 'status', 'comments_enabled',
             'reactions_enabled', 'featured_image', 'video_url', 'audio_url',
-            'is_featured', 'featured_priority', 'series', 'series_order'
+            'is_featured', 'featured_priority', 'series', 'series_order', 'category'
         ]
     
     def create(self, validated_data):
@@ -169,7 +169,7 @@ class PostUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'title', 'content', 'post_type', 'comments_enabled',
             'reactions_enabled', 'featured_image', 'video_url', 'audio_url',
-            'is_featured', 'featured_priority', 'series', 'series_order'
+            'is_featured', 'featured_priority', 'series', 'series_order', 'category'
         ]
         # Explicitly exclude published_at from updates
         read_only_fields = ['published_at']
@@ -200,13 +200,18 @@ class PostListSerializer(serializers.ModelSerializer):
     author_email = serializers.CharField(source='author.email', read_only=True)
     comments_count = serializers.SerializerMethodField()
     reactions_count = serializers.SerializerMethodField()
+    content_type_name = serializers.CharField(source='get_content_type_name', read_only=True)
+    content_type_slug = serializers.CharField(source='get_content_type_slug', read_only=True)
+    series_title = serializers.CharField(source='series.title', read_only=True, allow_null=True)
     
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'post_type', 'author', 'author_name', 'author_email', 
-            'is_published', 'published_at', 'status', 'views_count', 'comments_count', 
-            'reactions_count', 'is_featured', 'featured_priority', 'is_deleted', 'deleted_at', 'created_at'
+            'id', 'title', 'content', 'post_type', 'content_type', 'content_type_name',
+            'content_type_slug', 'author', 'author_name', 'author_email', 
+            'is_published', 'published_at', 'status', 'featured_image', 'video_url', 'audio_url',
+            'views_count', 'comments_count', 'reactions_count', 'is_featured', 'featured_priority', 
+            'series_title', 'series_order', 'category', 'is_deleted', 'deleted_at', 'created_at', 'updated_at'
         ]
     
     def get_comments_count(self, obj):

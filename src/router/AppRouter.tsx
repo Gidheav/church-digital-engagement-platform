@@ -16,12 +16,15 @@ import ToastContainer from '../components/ToastContainer';
 
 // Public pages
 import HomePage from '../public/HomePage';
+import LibraryPage from '../public/library/LibraryPage';
+import SeriesPage from '../public/library/SeriesPage';
+import SermonDetail from '../public/library/sermon/SermonDetail';
+import ConnectPage from '../public/ConnectPage';
+import EventsPage from '../public/EventsPage';
 import LoginPage from '../public/LoginPage';
 import RegisterPage from '../public/RegisterPage';
 import ContentList from '../public/ContentList';
 import ContentDetail from '../public/ContentDetail';
-import SeriesList from '../public/SeriesList';
-import SeriesDetail from '../public/SeriesDetail';
 import AdminAuth from '../pages/AdminAuth';
 import Forbidden from '../pages/Forbidden';
 import VerifyEmail from '../pages/VerifyEmail';
@@ -55,12 +58,15 @@ const AppRouter: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/library/series" element={<SeriesPage />} />
+        <Route path="/library/sermon/:id" element={<SermonDetail />} />
+        <Route path="/connect" element={<ConnectPage />} />
+        <Route path="/events" element={<EventsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/content" element={<ContentList />} />
         <Route path="/content/:id" element={<ContentDetail />} />
-        <Route path="/series" element={<SeriesList />} />
-        <Route path="/series/:slug" element={<SeriesDetail />} />
         
         {/* Admin Authentication (Separate from member auth) */}
         <Route path="/admin-auth" element={<AdminAuth />} />

@@ -15,6 +15,7 @@ import {
   StarIcon,
 } from './components/Icons';
 import './styles/SeriesCreate.pro.css';
+import ImageUploadInput from './components/ImageUploadInput';
 
 interface SeriesCreateProps {
   onSuccess: () => void;
@@ -155,22 +156,12 @@ const SeriesCreate: React.FC<SeriesCreateProps> = ({ onSuccess, onCancel }) => {
 
           {/* Cover Image */}
           <div className="series-form-group">
-            <label htmlFor="cover_image">
-              Cover Image URL
-            </label>
-            <input
-              type="text"
-              id="cover_image"
-              name="cover_image"
-              value={formData.cover_image}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
+            <label>Cover Image</label>
+            <ImageUploadInput
+              value={formData.cover_image || ''}
+              onChange={(url) => setFormData((prev) => ({ ...prev, cover_image: url }))}
               disabled={loading}
-              className="series-form-input"
             />
-            <span className="series-form-hint">
-              Optional: URL to an image (https only)
-            </span>
           </div>
         </div>
 

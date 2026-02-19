@@ -7,6 +7,7 @@ from .views import AdminPostViewSet
 from .content_type_views import ContentTypeViewSet
 from .interaction_views import InteractionViewSet
 from .draft_views import DraftViewSet
+from .upload_views import ImageUploadView
 
 app_name = 'content'
 
@@ -18,4 +19,5 @@ router.register(r'drafts', DraftViewSet, basename='draft')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('upload/image/', ImageUploadView.as_view(), name='upload-image'),
 ]

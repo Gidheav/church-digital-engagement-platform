@@ -21,6 +21,7 @@ import {
   BookOpen,
 } from './components/Icons';
 import './styles/SeriesEdit.pro.css';
+import ImageUploadInput from './components/ImageUploadInput';
 
 interface SeriesEditProps {
   series: Series;
@@ -291,22 +292,12 @@ const SeriesEdit: React.FC<SeriesEditProps> = ({ series, onSuccess, onCancel }) 
 
             {/* Cover Image */}
             <div className="series-edit-group">
-              <label htmlFor="cover_image">
-                Cover Image URL
-              </label>
-              <input
-                type="text"
-                id="cover_image"
-                name="cover_image"
-                value={formData.cover_image}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
+              <label>Cover Image</label>
+              <ImageUploadInput
+                value={formData.cover_image || ''}
+                onChange={(url) => setFormData((prev) => ({ ...prev, cover_image: url }))}
                 disabled={loading}
-                className="series-edit-input"
               />
-              <span className="series-edit-hint">
-                Optional: URL to an image (https only)
-              </span>
             </div>
           </div>
 

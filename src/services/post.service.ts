@@ -196,6 +196,27 @@ class PostService {
     const response = await this.api.post(`/${id}/cancel-schedule/`);
     return response.data.post;
   }
+
+  /**
+   * Upload an image file and return the stored URL
+   */
+  async uploadImage(file: File): Promise<string> {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('auth_tokens');
+    let authHeader = '';
+    if (token) {
+      if (token.startsWith('{')) {
+        try { authHeader = `Bearer ${JSON.parse(token).access}`; } catch { authHeader = `Bearer ${token}`; }
+      } else {
+        authHeader = `Bearer ${token}`;
+      }
+    }
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await this.api.post('http://localhost:8000/api/v1/admin/content/upload/image/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data', Authorization: authHeader },
+    });
+    return response.data.url;
+  }
 }
 
 export const postService = new PostService();

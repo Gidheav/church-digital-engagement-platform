@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import './PublicNavigation.css';
 
@@ -91,30 +91,30 @@ const PublicNavigation: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="public-navigation-wrapper">
       <header className="public-nav" role="banner">
         <nav className="nav-shell" aria-label="Primary">
-          <a className="nav-brand-fixed" href="/" aria-label="Home">
+          <Link className="nav-brand-fixed" to="/" aria-label="Home">
             <span className="brand-icon" aria-hidden="true">
               <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="40" height="40" rx="8" fill="currentColor" />
                 <path d="M20 8L20 32M12 16L28 16" stroke="white" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </span>
-          </a>
+          </Link>
 
-          <div className="nav-center">
-            {navItems.slice(0, 2).map((item, index) => (
+          <div className="nav-links">
+            {navItems.slice(0, 2).map((item: string) => (
               <a
                 key={item}
                 href="#"
-                className={`nav-link nav-priority-${index + 1} ${activeItem === item ? 'active' : ''}`}
-                onClick={(event) => handleNavClick(item, event)}
+                className={`nav-link nav-priority-${navItems.indexOf(item) + 1} ${activeItem === item ? 'active' : ''}`}
+                onClick={(event: React.MouseEvent<HTMLAnchorElement>) => handleNavClick(item, event)}
               >
                 {item}
               </a>
             ))}
-            {navItems.slice(2, 3).map((item) => (
+            {navItems.slice(2, 3).map((item: string) => (
               <a
                 key={item}
                 href="#"
@@ -208,9 +208,9 @@ const PublicNavigation: React.FC = () => {
               )}
             </div>
           ) : (
-            <a href="/login" className="btn-login-fixed">
+            <Link to="/login" className="btn-login-fixed">
               Login
-            </a>
+            </Link>
           )}
 
             <button
@@ -266,7 +266,7 @@ const PublicNavigation: React.FC = () => {
       </div>
 
       <div className="nav-spacer" />
-    </>
+    </div>
   );
 };
 
