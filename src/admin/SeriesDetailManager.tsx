@@ -1,30 +1,56 @@
 ﻿/**
  * Series Detail Manager
  * Full series detail view powered by real API data.
- * Shows: series header, metrics, posts tab (drag-to-reorder, remove),
- * Settings / Analytics / Resources tabs as future placeholders.
+ * Tabs: Posts | Edit Series | Analytics | Resources
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import seriesService, { SeriesDetail, SeriesPost } from '../services/series.service';
-import SeriesEdit from './SeriesEdit';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import seriesService, { SeriesDetail, SeriesPost, SERIES_VISIBILITY_OPTIONS } from '../services/series.service';
+import ImageUploadInput from './components/ImageUploadInput';
+import postService, { Post } from '../services/post.service';
 
-type TabKey = 'posts' | 'settings' | 'analytics' | 'resources';
+type TabKey = 'posts' | 'edit' | 'analytics' | 'resources' | 'settings';
 
 const SeriesDetailManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
+  // ── Series data ─────────────────────────────────────────────────
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [posts, setPosts] = useState<SeriesPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // ── Tabs ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabKey>('posts');
+
+  // ── Posts tab state ─────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState('');
-  const [showEdit, setShowEdit] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
 
+  // ── Add Post modal state ────────────────────────────────────────
+  const [showAddPost, setShowAddPost] = useState(false);
+  const [availablePosts, setAvailablePosts] = useState<Post[]>([]);
+  const [addPostSearch, setAddPostSearch] = useState('');
+  const [addingPostId, setAddingPostId] = useState<string | null>(null);
+  const [loadingAvailablePosts, setLoadingAvailablePosts] = useState(false);
+
+  // ── Edit tab state ──────────────────────────────────────────────
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    cover_image: '',
+    visibility: 'PUBLIC' as 'PUBLIC' | 'MEMBERS_ONLY' | 'HIDDEN',
+    is_featured: false,
+    featured_priority: 0,
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
+
+  // ── Fetch ────────────────────────────────────────────────────────
   const fetchSeries = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -44,8 +70,21 @@ const SeriesDetailManager: React.FC = () => {
     fetchSeries();
   }, [fetchSeries]);
 
-  /* ─── Post actions ─────────────────────────────────────────────── */
+  // Sync edit form whenever series data arrives
+  useEffect(() => {
+    if (series) {
+      setEditForm({
+        title: series.title,
+        description: series.description || '',
+        cover_image: series.cover_image || '',
+        visibility: series.visibility,
+        is_featured: series.is_featured,
+        featured_priority: series.featured_priority,
+      });
+    }
+  }, [series]);
 
+  // ── Post actions ─────────────────────────────────────────────────
   const handleSaveOrder = async () => {
     if (!id) return;
     setSavingOrder(true);
@@ -76,8 +115,7 @@ const SeriesDetailManager: React.FC = () => {
     }
   };
 
-  /* ─── Drag-to-reorder ───────────────────────────────────────────── */
-
+  // ── Drag-to-reorder ──────────────────────────────────────────────
   const handleDragStart = (postId: string) => setDraggedId(postId);
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
   const handleDrop = (targetId: string) => {
@@ -96,15 +134,109 @@ const SeriesDetailManager: React.FC = () => {
     p.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  /* ─── Loading / error states ────────────────────────────────────── */
+  // Derived: sum of all post view counts — updates instantly whenever posts state changes
+  const totalViews = useMemo(
+    () => posts.reduce((sum, p) => sum + (p.views_count || 0), 0),
+    [posts]
+  );
 
+  // ── Add Post handlers ────────────────────────────────────────────
+  const loadAvailablePosts = useCallback(async () => {
+    setLoadingAvailablePosts(true);
+    try {
+      const result = await postService.getAllPosts({ is_published: undefined });
+      const allArr: Post[] = Array.isArray(result) ? result : (result as any).results || [];
+      setAvailablePosts(allArr.filter(p => !posts.some(sp => sp.id === p.id)));
+    } catch {
+      // ignore
+    } finally {
+      setLoadingAvailablePosts(false);
+    }
+  }, [posts]);
+
+  useEffect(() => {
+    if (showAddPost) {
+      setAddPostSearch('');
+      loadAvailablePosts();
+    }
+  }, [showAddPost]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAddPost = async (postId: string) => {
+    if (!id) return;
+    setAddingPostId(postId);
+    try {
+      await seriesService.addPostToSeries(id, { post_id: postId, series_order: posts.length + 1 });
+      await fetchSeries();
+      setAvailablePosts(prev => prev.filter(p => p.id !== postId));
+    } catch (err: any) {
+      alert('Failed to add post: ' + (err.message || 'Error'));
+    } finally {
+      setAddingPostId(null);
+    }
+  };
+
+  const handleMovePost = (postId: string, direction: 'up' | 'down') => {
+    const idx = posts.findIndex(p => p.id === postId);
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === posts.length - 1) return;
+    const newPosts = [...posts];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    [newPosts[idx], newPosts[swapIdx]] = [newPosts[swapIdx], newPosts[idx]];
+    setPosts(newPosts);
+  };
+
+  // ── Edit form handlers ───────────────────────────────────────────
+  const handleEditChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setEditForm(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else if (type === 'number') {
+      setEditForm(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
+    } else {
+      setEditForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!id || !editForm.title.trim()) {
+      setEditError('Series title is required.');
+      return;
+    }
+    setEditSaving(true);
+    setEditError('');
+    setEditSuccess(false);
+    try {
+      await seriesService.updateSeries(id, {
+        title: editForm.title,
+        description: editForm.description,
+        cover_image: editForm.cover_image,
+        visibility: editForm.visibility,
+        is_featured: editForm.is_featured,
+        featured_priority: editForm.featured_priority,
+      });
+      setEditSuccess(true);
+      fetchSeries();
+      setTimeout(() => setEditSuccess(false), 3500);
+    } catch (err: any) {
+      setEditError(
+        err.response?.data?.message ||
+        err.response?.data?.title?.[0] ||
+        err.message ||
+        'Failed to save changes'
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // ── Loading / error ──────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-3 text-slate-500">
-          <span className="material-symbols-outlined text-4xl animate-spin">
-            progress_activity
-          </span>
+          <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
           <p className="text-sm font-medium">Loading series...</p>
         </div>
       </div>
@@ -117,22 +249,15 @@ const SeriesDetailManager: React.FC = () => {
         <div className="text-center">
           <span className="material-symbols-outlined text-5xl text-red-300">error_outline</span>
           <p className="mt-3 text-red-600 font-semibold">{error || 'Series not found'}</p>
-          <button onClick={fetchSeries} className="mt-4 text-primary text-sm underline">
-            Retry
-          </button>
+          <button onClick={fetchSeries} className="mt-4 text-primary text-sm underline">Retry</button>
         </div>
       </div>
     );
   }
 
-  /* ─── Helpers ───────────────────────────────────────────────────── */
-
+  // ── Helpers ──────────────────────────────────────────────────────
   const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const authorName =
     series.author_name ||
@@ -140,28 +265,23 @@ const SeriesDetailManager: React.FC = () => {
       ? (series.author as any).full_name
       : null);
 
-  /* ─── Render ────────────────────────────────────────────────────── */
-
+  // ── Render ───────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Edit modal */}
-      {showEdit && (
-        <SeriesEdit
-          series={series as any}
-          onSuccess={() => {
-            setShowEdit(false);
-            fetchSeries();
-          }}
-          onCancel={() => setShowEdit(false)}
-        />
-      )}
 
-      {/* ── Page Header ─────────────────────────────────────────────── */}
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <div className="bg-white border-b border-slate-200 px-6 py-5 flex-shrink-0">
         <div className="max-w-7xl mx-auto w-full">
+
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-4">
-            <span>Series Management</span>
+            <button
+              onClick={() => navigate('/admin/series')}
+              className="hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+              Series Management
+            </button>
             <span className="material-symbols-outlined text-[10px]">chevron_right</span>
             <span className="text-slate-900 truncate max-w-xs">{series.title}</span>
           </nav>
@@ -171,16 +291,10 @@ const SeriesDetailManager: React.FC = () => {
               {/* Cover image */}
               <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
                 {series.cover_image ? (
-                  <img
-                    src={series.cover_image}
-                    alt={series.title}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={series.cover_image} alt={series.title} className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-3xl text-slate-300">
-                      account_tree
-                    </span>
+                    <span className="material-symbols-outlined text-3xl text-slate-300">account_tree</span>
                   </div>
                 )}
               </div>
@@ -196,15 +310,13 @@ const SeriesDetailManager: React.FC = () => {
                       Featured
                     </span>
                   )}
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      series.visibility === 'PUBLIC'
-                        ? 'bg-green-100 text-green-700 border-green-200'
-                        : series.visibility === 'MEMBERS_ONLY'
-                        ? 'bg-blue-100 text-blue-700 border-blue-200'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}
-                  >
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    series.visibility === 'PUBLIC'
+                      ? 'bg-green-100 text-green-700 border-green-200'
+                      : series.visibility === 'MEMBERS_ONLY'
+                      ? 'bg-blue-100 text-blue-700 border-blue-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                  }`}>
                     {series.visibility.replace('_', ' ')}
                   </span>
                 </div>
@@ -227,12 +339,9 @@ const SeriesDetailManager: React.FC = () => {
                       <span className="w-1 h-1 rounded-full bg-slate-300" />
                       <span className="flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-[14px]">event</span>
-                        Active:{' '}
-                        <strong>
+                        Active: <strong>
                           {fmtDate(series.date_range.start)}
-                          {series.date_range.end
-                            ? ` – ${fmtDate(series.date_range.end)}`
-                            : ' – Present'}
+                          {series.date_range.end ? ` – ${fmtDate(series.date_range.end)}` : ' – Present'}
                         </strong>
                       </span>
                     </>
@@ -253,7 +362,7 @@ const SeriesDetailManager: React.FC = () => {
                 View as Congregation
               </a>
               <button
-                onClick={() => setShowEdit(true)}
+                onClick={() => setActiveTab('edit')}
                 className="bg-primary hover:opacity-90 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -265,39 +374,17 @@ const SeriesDetailManager: React.FC = () => {
           {/* Metrics strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 border-t border-slate-100 pt-4">
             {[
-              {
-                icon: 'visibility',
-                bg: 'bg-blue-50 text-blue-600',
-                label: 'Total Views',
-                value: (series.total_views || 0).toLocaleString(),
-              },
-              {
-                icon: 'article',
-                bg: 'bg-purple-50 text-purple-600',
-                label: 'Posts Published',
-                value: `${series.published_post_count} / ${series.post_count}`,
-              },
-              {
-                icon: 'share',
-                bg: 'bg-orange-50 text-orange-600',
-                label: 'Shares',
-                value: '—',
-              },
-              {
-                icon: 'bookmark',
-                bg: 'bg-teal-50 text-teal-600',
-                label: 'Saves',
-                value: '—',
-              },
+              { icon: 'visibility', bg: 'bg-blue-50 text-blue-600', label: 'Total Views', value: totalViews.toLocaleString() },
+              { icon: 'article', bg: 'bg-purple-50 text-purple-600', label: 'Posts Published', value: `${series.published_post_count} / ${series.post_count}` },
+              { icon: 'share', bg: 'bg-orange-50 text-orange-600', label: 'Shares', value: '—' },
+              { icon: 'bookmark', bg: 'bg-teal-50 text-teal-600', label: 'Saves', value: '—' },
             ].map(m => (
               <div key={m.label} className="flex items-center gap-3">
                 <div className={`p-1.5 rounded ${m.bg}`}>
                   <span className="material-symbols-outlined text-lg">{m.icon}</span>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">
-                    {m.label}
-                  </p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">{m.label}</p>
                   <p className="text-sm font-bold text-slate-900">{m.value}</p>
                 </div>
               </div>
@@ -306,16 +393,17 @@ const SeriesDetailManager: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Tab bar ─────────────────────────────────────────────────── */}
+      {/* ── Tab bar ─────────────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white px-6 flex-shrink-0">
         <div className="max-w-7xl mx-auto w-full">
           <nav className="flex -mb-px space-x-8">
             {(
               [
                 { key: 'posts' as TabKey, icon: 'list_alt', label: 'Posts', count: posts.length },
-                { key: 'settings' as TabKey, icon: 'settings', label: 'Settings' },
+                { key: 'edit' as TabKey, icon: 'edit', label: 'Edit Series' },
                 { key: 'analytics' as TabKey, icon: 'analytics', label: 'Analytics' },
                 { key: 'resources' as TabKey, icon: 'folder_open', label: 'Resources' },
+                { key: 'settings' as TabKey, icon: 'settings', label: 'Settings' },
               ] as const
             ).map(tab => (
               <button
@@ -330,13 +418,9 @@ const SeriesDetailManager: React.FC = () => {
                 <span className="material-symbols-outlined text-lg">{tab.icon}</span>
                 {tab.label}
                 {'count' in tab && (
-                  <span
-                    className={`py-0.5 px-2 rounded-full text-xs ${
-                      activeTab === tab.key
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
+                  <span className={`py-0.5 px-2 rounded-full text-xs ${
+                    activeTab === tab.key ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
+                  }`}>
                     {tab.count}
                   </span>
                 )}
@@ -346,11 +430,11 @@ const SeriesDetailManager: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Tab content ─────────────────────────────────────────────── */}
+      {/* ── Tab content ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
         <div className="max-w-7xl mx-auto">
 
-          {/* ── Posts tab ─────────────────────────────────────────── */}
+          {/* ── Posts tab ──────────────────────────────────────── */}
           {activeTab === 'posts' && (
             <div className="flex flex-col gap-4">
               {/* Toolbar */}
@@ -366,16 +450,25 @@ const SeriesDetailManager: React.FC = () => {
                     onChange={e => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <button
-                  onClick={handleSaveOrder}
-                  disabled={savingOrder}
-                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60"
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    {savingOrder ? 'hourglass_empty' : 'save'}
-                  </span>
-                  {savingOrder ? 'Saving...' : 'Save Order'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowAddPost(true)}
+                    className="border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Add Post
+                  </button>
+                  <button
+                    onClick={handleSaveOrder}
+                    disabled={savingOrder}
+                    className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-sm">
+                      {savingOrder ? 'hourglass_empty' : 'save'}
+                    </span>
+                    {savingOrder ? 'Saving...' : 'Save Order'}
+                  </button>
+                </div>
               </div>
 
               {/* Empty state */}
@@ -383,9 +476,16 @@ const SeriesDetailManager: React.FC = () => {
                 <div className="text-center py-16 text-slate-500">
                   <span className="material-symbols-outlined text-5xl text-slate-300">article</span>
                   <p className="mt-2 font-semibold">No posts in this series yet</p>
-                  <p className="text-xs mt-1 text-slate-400">
-                    Use "Edit Series" to add posts from your content library
+                  <p className="text-xs mt-1 text-slate-400 mb-4">
+                    Add posts to this series to get started
                   </p>
+                  <button
+                    onClick={() => setShowAddPost(true)}
+                    className="border border-primary text-primary hover:bg-primary/5 px-5 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-2 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Add Post
+                  </button>
                 </div>
               )}
 
@@ -401,47 +501,48 @@ const SeriesDetailManager: React.FC = () => {
                       onDrop={() => handleDrop(post.id)}
                       className={[
                         'bg-white rounded-xl p-4 flex items-center gap-4 border transition-all select-none',
-                        post.is_published
-                          ? 'border-slate-200 hover:border-slate-300'
-                          : 'border-slate-200 opacity-70',
+                        post.is_published ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 opacity-70',
                         draggedId === post.id ? 'opacity-40 scale-[0.98]' : '',
                       ].join(' ')}
                     >
-                      {/* Drag handle */}
                       <div className="text-slate-300 cursor-grab active:cursor-grabbing">
                         <span className="material-symbols-outlined">drag_indicator</span>
                       </div>
-
-                      {/* Thumbnail */}
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => handleMovePost(post.id, 'up')}
+                          disabled={idx === 0}
+                          className="p-0.5 text-slate-300 hover:text-primary transition-colors disabled:opacity-20 disabled:cursor-default"
+                          title="Move up"
+                        >
+                          <span className="material-symbols-outlined text-base leading-none">keyboard_arrow_up</span>
+                        </button>
+                        <button
+                          onClick={() => handleMovePost(post.id, 'down')}
+                          disabled={idx === filteredPosts.length - 1}
+                          className="p-0.5 text-slate-300 hover:text-primary transition-colors disabled:opacity-20 disabled:cursor-default"
+                          title="Move down"
+                        >
+                          <span className="material-symbols-outlined text-base leading-none">keyboard_arrow_down</span>
+                        </button>
+                      </div>
                       <div className="h-10 w-10 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
                         {post.featured_image ? (
-                          <img
-                            src={post.featured_image}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
+                          <img src={post.featured_image} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
-                            <span className="material-symbols-outlined text-lg text-slate-300">
-                              article
-                            </span>
+                            <span className="material-symbols-outlined text-lg text-slate-300">article</span>
                           </div>
                         )}
                       </div>
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-900 truncate">
                           Part {idx + 1}: {post.title}
                         </p>
                         <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 flex-wrap">
                           {post.author_name && <span>{post.author_name}</span>}
-                          {post.author_name && post.published_at && (
-                            <span className="w-1 h-1 rounded-full bg-slate-300" />
-                          )}
-                          {post.published_at && (
-                            <span>{fmtDate(post.published_at)}</span>
-                          )}
+                          {post.author_name && post.published_at && <span className="w-1 h-1 rounded-full bg-slate-300" />}
+                          {post.published_at && <span>{fmtDate(post.published_at)}</span>}
                           <span className="w-1 h-1 rounded-full bg-slate-300" />
                           <span>{(post.views_count || 0).toLocaleString()} views</span>
                           {post.content_type_name && (
@@ -452,17 +553,11 @@ const SeriesDetailManager: React.FC = () => {
                           )}
                         </div>
                       </div>
-
-                      {/* Status + remove */}
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {post.is_published ? (
-                          <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider">
-                            Published
-                          </span>
+                          <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider">Published</span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                            Draft
-                          </span>
+                          <span className="px-2.5 py-1 rounded-full border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">Draft</span>
                         )}
                         <button
                           onClick={() => handleRemovePost(post.id)}
@@ -479,71 +574,599 @@ const SeriesDetailManager: React.FC = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Add post CTA */}
-              <button
-                onClick={() => setShowEdit(true)}
-                className="mt-2 group flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-primary/5 rounded-xl transition-all"
-              >
-                <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/20 transition-colors mb-2">
-                  <span className="material-symbols-outlined text-2xl">add</span>
+          {/* ── Edit Series tab ─────────────────────────────────── */}
+          {activeTab === 'edit' && (
+            <div className="flex flex-col gap-5">
+
+              {/* Status banners */}
+              {editSuccess && (
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-3 text-sm font-medium">
+                  <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
+                  Series updated successfully.
                 </div>
-                <span className="text-sm font-semibold text-slate-600 group-hover:text-primary">
-                  Add Post to Series
-                </span>
-                <span className="text-[10px] text-slate-400 uppercase tracking-tighter mt-1">
-                  Open series editor to select posts
-                </span>
-              </button>
+              )}
+              {editError && (
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-3 text-sm font-medium">
+                  <span className="material-symbols-outlined text-red-400 text-lg">error_outline</span>
+                  {editError}
+                </div>
+              )}
+
+              {/* Two-column editor layout */}
+              <div className="flex flex-col lg:flex-row gap-5 items-start">
+
+                {/* ── Left column: Content ────────────────────── */}
+                <div className="flex-1 min-w-0 flex flex-col gap-5">
+
+                  {/* Card: Series Details */}
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden px-0 py-0">
+                    <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Left: Title & Description */}
+                      <div className="flex flex-col gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Title <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="title"
+                            value={editForm.title}
+                            onChange={handleEditChange}
+                            disabled={editSaving}
+                            placeholder="e.g., The Divine Renovation: Rebuilding the Temple of Your Heart"
+                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white transition-colors font-semibold"
+                          />
+                          <p className="text-xs text-slate-400 mt-1">The public-facing name of the series</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Description</label>
+                          <textarea
+                            name="description"
+                            value={editForm.description}
+                            onChange={handleEditChange}
+                            disabled={editSaving}
+                            placeholder="Describe what this series is about, its themes, and who it's for..."
+                            rows={6}
+                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white resize-none transition-colors"
+                          />
+                          <p className="text-xs text-slate-400 mt-1">Shown on the public series page — helps members understand what to expect</p>
+                        </div>
+                      </div>
+                      {/* Right: Cover Image */}
+                      <div className="flex flex-col gap-4 items-center justify-center">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 w-full">Cover Image</label>
+                        <div className="w-full flex flex-col items-center gap-3">
+                          <ImageUploadInput
+                            value={editForm.cover_image || ''}
+                            onChange={(url) => setEditForm(prev => ({ ...prev, cover_image: url }))}
+                            disabled={editSaving}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                              // onClick={handleReplaceImage}
+                              disabled={editSaving}
+                            >
+                              Replace
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition-colors"
+                              onClick={() => setEditForm(prev => ({ ...prev, cover_image: '' }))}
+                              disabled={editSaving}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-2">Recommended: 1280 × 720 px (16:9), JPG or PNG</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Right column: Settings sidebar ──────────── */}
+                <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-5">
+
+                  {/* Card: Visibility */}
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
+                      <span className="material-symbols-outlined text-[18px] text-primary/70">lock_open</span>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800">Visibility</h3>
+                        <p className="text-xs text-slate-400">Who can access this series</p>
+                      </div>
+                    </div>
+                    <div className="px-5 py-5 flex flex-col gap-3">
+                      {SERIES_VISIBILITY_OPTIONS.map(opt => {
+                        const icons: Record<string, string> = { PUBLIC: 'public', MEMBERS_ONLY: 'group', HIDDEN: 'visibility_off' };
+                        const descs: Record<string, string> = {
+                          PUBLIC: 'Anyone can discover and view',
+                          MEMBERS_ONLY: 'Authenticated members only',
+                          HIDDEN: 'Hidden from all listings',
+                        };
+                        const isActive = editForm.visibility === opt.value;
+                        return (
+                          <label
+                            key={opt.value}
+                            className={[
+                              'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all',
+                              isActive
+                                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+                            ].join(' ')}
+                          >
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value={opt.value}
+                              checked={isActive}
+                              onChange={handleEditChange}
+                              disabled={editSaving}
+                              className="sr-only"
+                            />
+                            <span className={`material-symbols-outlined text-lg ${isActive ? 'text-primary' : 'text-slate-400'}`}>
+                              {icons[opt.value]}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold ${isActive ? 'text-primary' : 'text-slate-700'}`}>{opt.label}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">{descs[opt.value]}</p>
+                            </div>
+                            {isActive && (
+                              <span className="material-symbols-outlined text-primary text-base">check_circle</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Card: Featured */}
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
+                      <span className="material-symbols-outlined text-[18px] text-amber-500">star</span>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800">Featured</h3>
+                        <p className="text-xs text-slate-400">Promote on the homepage</p>
+                      </div>
+                    </div>
+                    <div className="px-5 py-5 flex flex-col gap-4">
+                      <label className="flex items-center justify-between gap-4 cursor-pointer">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Feature this series</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Shown prominently to all visitors</p>
+                        </div>
+                        <div className="relative flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            name="is_featured"
+                            checked={editForm.is_featured}
+                            onChange={handleEditChange}
+                            disabled={editSaving}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors peer-disabled:opacity-50" />
+                          <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                        </div>
+                      </label>
+
+                      {editForm.is_featured && (
+                        <div className="pt-1 border-t border-slate-100 flex flex-col gap-2">
+                          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            Display Priority
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              name="featured_priority"
+                              value={editForm.featured_priority}
+                              onChange={handleEditChange}
+                              min={0}
+                              max={100}
+                              disabled={editSaving}
+                              className="w-20 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 text-center font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-slate-50 transition-colors"
+                            />
+                            <p className="text-xs text-slate-400 leading-relaxed">Higher = appears earlier in featured lists</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save / Discard */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={handleEditSave}
+                      disabled={editSaving || !editForm.title.trim()}
+                      className="w-full px-5 py-2.5 rounded-lg bg-primary hover:opacity-90 text-white text-sm font-bold shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {editSaving ? 'hourglass_empty' : 'check'}
+                      </span>
+                      {editSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (series) {
+                          setEditForm({
+                            title: series.title,
+                            description: series.description || '',
+                            cover_image: series.cover_image || '',
+                            visibility: series.visibility,
+                            is_featured: series.is_featured,
+                            featured_priority: series.featured_priority,
+                          });
+                        }
+                        setEditError('');
+                        setEditSuccess(false);
+                      }}
+                      disabled={editSaving}
+                      className="w-full px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    >
+                      Discard Changes
+                    </button>
+                  </div>
+
+                </div>
+              </div>
             </div>
           )}
 
-          {/* ── Settings tab ──────────────────────────────────────── */}
-          {activeTab === 'settings' && (
-            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
-              <span className="material-symbols-outlined text-5xl text-slate-300">settings</span>
-              <p className="text-slate-700 font-semibold mt-4 text-lg">Series Settings</p>
-              <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
-                Update the title, description, cover image, visibility, and featured settings via the
-                Edit Series panel.
-              </p>
-              <button
-                onClick={() => setShowEdit(true)}
-                className="mt-6 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
-              >
-                Edit Series
-              </button>
-            </div>
-          )}
-
-          {/* ── Analytics tab ─────────────────────────────────────── */}
+          {/* ── Analytics tab ───────────────────────────────────── */}
           {activeTab === 'analytics' && (
             <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
               <span className="material-symbols-outlined text-5xl text-slate-300">analytics</span>
               <p className="text-slate-700 font-semibold mt-4 text-lg">Analytics Coming Soon</p>
               <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
-                Detailed per-post engagement, retention curves, and share analytics will be
-                available here in a future update.
+                Detailed per-post engagement, retention curves, and share analytics will be available here in a future update.
               </p>
             </div>
           )}
 
-          {/* ── Resources tab ─────────────────────────────────────── */}
+          {/* ── Resources tab ───────────────────────────────────── */}
           {activeTab === 'resources' && (
-            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
-              <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
-              <p className="text-slate-700 font-semibold mt-4 text-lg">Resources Coming Soon</p>
-              <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
-                Attach discussion guides, PDFs, and supplementary materials to this series in a
-                future update.
-              </p>
+            <div className="max-w-7xl mx-auto flex gap-6">
+              {/* Left: Placeholder or future resource content */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
+                <p className="text-slate-700 font-semibold mt-4 text-lg">Series Resources</p>
+                <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
+                  Attach discussion guides, PDFs, and supplementary materials to this series.
+                </p>
+              </div>
+              {/* Right: Sidebar with resources and notes */}
+              <div className="w-80 flex-shrink-0 flex flex-col gap-4">
+                {/* Series Resources */}
+                <SeriesResourcesSidebar />
+                {/* Admin Notes */}
+                <AdminNotesSidebar />
+              </div>
+            </div>
+          )}
+
+          {/* ── Settings tab ────────────────────────────────────── */}
+          {activeTab === 'settings' && (
+            <div className="flex flex-col lg:flex-row gap-5 items-start">
+              {/* Left column: Info cards */}
+              <div className="flex-1 min-w-0 flex flex-col gap-5">
+                {/* Card: Series Information */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-[18px] text-primary/70">info</span>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Series Information</h3>
+                      <p className="text-xs text-slate-400">Read-only metadata about this series</p>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {[
+                      { icon: 'tag', label: 'Series ID', value: series.id },
+                      { icon: 'link', label: 'Public URL Slug', value: series.slug },
+                      { icon: 'calendar_today', label: 'Created', value: fmtDate(series.created_at) },
+                      { icon: 'article', label: 'Total Posts', value: `${series.post_count} posts (${series.published_post_count} published)` },
+                      { icon: 'visibility', label: 'Total Views', value: totalViews.toLocaleString() },
+                    ].map(row => (
+                      <div key={row.label} className="flex items-center gap-4 px-6 py-3.5">
+                        <span className="material-symbols-outlined text-base text-slate-300 flex-shrink-0">{row.icon}</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-32 flex-shrink-0">{row.label}</span>
+                        <span className="text-sm text-slate-800 font-medium truncate">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Card: Public URL */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-[18px] text-primary/70">open_in_new</span>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Public Page</h3>
+                      <p className="text-xs text-slate-400">The live URL for this series</p>
+                    </div>
+                  </div>
+                  <div className="px-6 py-5">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+                      <span className="material-symbols-outlined text-slate-400 text-sm flex-shrink-0">link</span>
+                      <span className="text-xs text-slate-500 truncate flex-1">/library/series/{series.slug}</span>
+                      <a
+                        href={`/library/series/${series.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-shrink-0 text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                      >
+                        Open
+                        <span className="material-symbols-outlined text-xs">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Right column: Danger zone */}
+              <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-5">
+                <div className="bg-white rounded-xl border border-red-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-red-100 flex items-center gap-2.5 bg-red-50/60">
+                    <span className="material-symbols-outlined text-[18px] text-red-500">warning</span>
+                    <div>
+                      <h3 className="text-sm font-bold text-red-700">Danger Zone</h3>
+                      <p className="text-xs text-red-400">Irreversible actions</p>
+                    </div>
+                  </div>
+                  <div className="px-5 py-5 flex flex-col gap-4">
+                    {/* Archive */}
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm font-semibold text-slate-800">Archive Series</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        Hides the series from public view without deleting any content. You can restore it later from Visibility settings.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditForm(prev => ({ ...prev, visibility: 'HIDDEN' }));
+                          setActiveTab('edit');
+                        }}
+                        className="mt-1 w-full px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">archive</span>
+                        Archive (Set Hidden)
+                      </button>
+                    </div>
+                    <div className="border-t border-red-100" />
+                    {/* Delete */}
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm font-semibold text-red-700">Delete Series</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        Permanently removes this series. Posts assigned to it will not be deleted but will no longer be grouped.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!id) return;
+                          if (!window.confirm(`Delete "${series.title}"? This cannot be undone.`)) return;
+                          try {
+                            await seriesService.deleteSeries(id);
+                            window.history.back();
+                          } catch (err: any) {
+                            alert('Failed to delete: ' + (err.message || 'Unknown error'));
+                          }
+                        }}
+                        className="mt-1 w-full px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete_forever</span>
+                        Delete Series
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
         </div>
       </div>
+
+      {/* ── Add Post Modal ────────────────────────────────────────── */}
+      {showAddPost && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) setShowAddPost(false); }}
+        >
+          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl max-h-[80vh] flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-primary text-xl">playlist_add</span>
+                <h2 className="text-base font-bold text-slate-900">Add Post to Series</h2>
+              </div>
+              <button
+                onClick={() => setShowAddPost(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-6 py-3 border-b border-slate-100 flex-shrink-0">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                  <span className="material-symbols-outlined text-lg">search</span>
+                </span>
+                <input
+                  className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Search posts by title..."
+                  value={addPostSearch}
+                  onChange={e => setAddPostSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Posts list */}
+            <div className="overflow-y-auto flex-1">
+              {loadingAvailablePosts ? (
+                <div className="flex items-center justify-center py-12 text-slate-400">
+                  <span className="material-symbols-outlined animate-spin text-3xl">progress_activity</span>
+                </div>
+              ) : availablePosts.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <span className="material-symbols-outlined text-4xl text-slate-200">article</span>
+                  <p className="mt-2 text-sm font-medium">
+                    {addPostSearch ? 'No posts match your search' : 'All posts are already in this series'}
+                  </p>
+                </div>
+              ) : (
+                <ul>
+                  {availablePosts
+                    .filter(p => p.title.toLowerCase().includes(addPostSearch.toLowerCase()))
+                    .map(post => (
+                      <li
+                        key={post.id}
+                        className="flex items-center gap-4 px-6 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="h-10 w-10 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
+                          {post.featured_image ? (
+                            <img src={post.featured_image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <span className="material-symbols-outlined text-base text-slate-300">article</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{post.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
+                            {post.author_name && <span>{post.author_name}</span>}
+                            {post.content_type_name && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                <span>{post.content_type_name}</span>
+                              </>
+                            )}
+                            <span className="w-1 h-1 rounded-full bg-slate-300" />
+                            <span className={post.is_published ? 'text-green-600 font-medium' : 'text-slate-400'}>
+                              {post.is_published ? 'Published' : 'Draft'}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleAddPost(post.id)}
+                          disabled={addingPostId === post.id}
+                          className="flex-shrink-0 bg-primary text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 transition-opacity"
+                        >
+                          {addingPostId === post.id ? (
+                            <>
+                              <span className="material-symbols-outlined text-sm">hourglass_empty</span>
+                              Adding…
+                            </>
+                          ) : (
+                            <>
+                              <span className="material-symbols-outlined text-sm">add</span>
+                              Add
+                            </>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-3 border-t border-slate-100 flex-shrink-0 flex justify-end">
+              <button
+                onClick={() => setShowAddPost(false)}
+                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SeriesDetailManager;
+
+// SeriesResourcesSidebar component
+const initialResources = [
+  {
+    id: 1,
+    name: 'Discussion Guide.pdf',
+    type: 'pdf',
+    dateAdded: 'Oct 10',
+    size: '2.4 MB',
+  },
+  {
+    id: 2,
+    name: 'Series_Overview.docx',
+    type: 'doc',
+    dateAdded: 'Oct 11',
+    size: '450 KB',
+  },
+];
+
+function SeriesResourcesSidebar() {
+  const [resources, setResources] = useState(initialResources);
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-slate-900">Series Resources</h3>
+        <button className="text-primary hover:text-primary-dark p-1">
+          <span className="material-symbols-outlined text-lg">add_circle</span>
+        </button>
+      </div>
+      <ul className="space-y-3">
+        {resources.map((resource) => (
+          <li key={resource.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-slate-50 cursor-pointer group">
+            <span className={`material-symbols-outlined ${resource.type === 'pdf' ? 'text-red-500' : 'text-blue-500'} text-2xl mt-0.5`}>
+              {resource.type === 'pdf' ? 'picture_as_pdf' : 'description'}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-primary">
+                {resource.name}
+              </p>
+              <p className="text-[10px] text-slate-500">Added {resource.dateAdded} • {resource.size}</p>
+            </div>
+            <button
+              className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => setResources(resources.filter(r => r.id !== resource.id))}
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 pt-3 border-t border-slate-100">
+        <button className="w-full py-1.5 text-xs font-medium text-slate-500 hover:text-primary hover:bg-slate-50 rounded transition-colors text-center border border-dashed border-slate-300">
+          + Attach File
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// AdminNotesSidebar component
+function AdminNotesSidebar() {
+  const [adminNotes, setAdminNotes] = useState('');
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 flex-1">
+      <h3 className="text-sm font-bold text-slate-900 mb-2">Admin Notes</h3>
+      <textarea
+        className="w-full h-32 text-xs p-2 border border-slate-200 rounded-md bg-slate-50 focus:ring-primary focus:border-primary resize-none"
+        placeholder="Add internal notes for other admins..."
+        value={adminNotes}
+        onChange={e => setAdminNotes(e.target.value)}
+      ></textarea>
+      <div className="flex justify-end mt-2">
+        <button className="text-xs text-primary font-medium hover:underline">Save Note</button>
+      </div>
+    </div>
+  );
+}

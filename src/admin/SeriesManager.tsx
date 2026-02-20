@@ -3,9 +3,28 @@
  * Lists all series from the real API with create / edit / delete actions.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import seriesService, { Series } from '../services/series.service';
 import SeriesCreate from './SeriesCreate';
-import SeriesEdit from './SeriesEdit';
+
+// Dynamically fetch and sum views for a series
+const SeriesViewsCell: React.FC<{ seriesId: string }> = ({ seriesId }) => {
+  const [views, setViews] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    seriesService.getSeriesPosts(seriesId)
+      .then(posts => {
+        if (mounted) setViews(posts.reduce((sum, p) => sum + (p.views_count || 0), 0));
+      })
+      .catch(() => { if (mounted) setViews(null); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [seriesId]);
+  if (loading) return <span className="inline-flex items-center gap-1 text-slate-300"><span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>...</span>;
+  return <span>{(views || 0).toLocaleString()} views</span>;
+};
 
 const SeriesManager: React.FC = () => {
   const [series, setSeries] = useState<Series[]>([]);
@@ -13,8 +32,8 @@ const SeriesManager: React.FC = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [editingSeries, setEditingSeries] = useState<Series | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchSeries = useCallback(async () => {
     setLoading(true);
@@ -72,7 +91,7 @@ const SeriesManager: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Modals */}
+      {/* Create modal */}
       {showCreate && (
         <SeriesCreate
           onSuccess={() => {
@@ -80,16 +99,6 @@ const SeriesManager: React.FC = () => {
             fetchSeries();
           }}
           onCancel={() => setShowCreate(false)}
-        />
-      )}
-      {editingSeries && (
-        <SeriesEdit
-          series={editingSeries}
-          onSuccess={() => {
-            setEditingSeries(null);
-            fetchSeries();
-          }}
-          onCancel={() => setEditingSeries(null)}
         />
       )}
 
@@ -185,7 +194,8 @@ const SeriesManager: React.FC = () => {
               {filtered.map(s => (
                 <div
                   key={s.id}
-                  className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 hover:border-slate-300 transition-all"
+                  onClick={() => navigate(`/admin/series/${s.id}`)}
+                  className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer"
                 >
                   {/* Cover thumbnail */}
                   <div className="h-14 w-14 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
@@ -212,7 +222,7 @@ const SeriesManager: React.FC = () => {
                     <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
                       <span>{s.published_post_count} / {s.post_count} posts published</span>
                       <span className="w-1 h-1 rounded-full bg-slate-300" />
-                      <span>{(s.total_views || 0).toLocaleString()} views</span>
+                      <SeriesViewsCell seriesId={s.id} />
                       {s.author_name && (
                         <>
                           <span className="w-1 h-1 rounded-full bg-slate-300" />
@@ -238,14 +248,7 @@ const SeriesManager: React.FC = () => {
                   {/* Action buttons */}
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => setEditingSeries(s)}
-                      className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
-                      title="Edit series"
-                    >
-                      <span className="material-symbols-outlined">edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(s.id, s.title)}
+                      onClick={e => { e.stopPropagation(); handleDelete(s.id, s.title); }}
                       disabled={deletingId === s.id}
                       className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
                       title="Delete series"
@@ -254,6 +257,7 @@ const SeriesManager: React.FC = () => {
                         {deletingId === s.id ? 'hourglass_empty' : 'delete'}
                       </span>
                     </button>
+                    <span className="material-symbols-outlined text-slate-300 text-lg">chevron_right</span>
                   </div>
                 </div>
               ))}

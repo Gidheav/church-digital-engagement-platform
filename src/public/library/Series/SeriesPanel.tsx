@@ -1,6 +1,6 @@
 // SeriesPanel.tsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { PublicLayout } from '../../layouts';
 import seriesService, { SeriesDetail, SeriesPost } from '../../../services/series.service';
 
@@ -186,6 +186,7 @@ const SeriesPanel: React.FC = () => {
                   const episodeNumber = episode.series_order ?? index + 1;
                   const thumbnail = episode.featured_image || FALLBACK_THUMBNAIL;
                   const excerpt = (episode as any).excerpt || '';
+                  const postUrl = `/library/sermon/${episode.id}`;
                   return (
                     <div key={episode.id} className="group grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                       <div className="md:col-span-1">
@@ -194,7 +195,7 @@ const SeriesPanel: React.FC = () => {
                         </span>
                       </div>
                       <div className="md:col-span-4">
-                        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-200">
+                        <Link to={postUrl} className="block relative aspect-video w-full overflow-hidden rounded-xl bg-slate-200">
                           <img
                             alt={episode.title}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -207,24 +208,26 @@ const SeriesPanel: React.FC = () => {
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
                             <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
                           </div>
-                        </div>
+                        </Link>
                       </div>
                       <div className="md:col-span-7 flex flex-col justify-center">
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
-                          {episode.title}
-                        </h3>
+                        <Link to={postUrl} className="block group-hover:text-primary transition-colors">
+                          <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
+                            {episode.title}
+                          </h3>
+                        </Link>
                         <p className="text-slate-600 mb-4 line-clamp-2 italic font-light">
                           {excerpt || <span className="text-slate-300">No description available.</span>}
                         </p>
                         <div className="flex items-center gap-6">
-                          <button className="flex items-center gap-2 text-sm font-bold text-primary uppercase tracking-widest">
+                          <Link to={postUrl} className="flex items-center gap-2 text-sm font-bold text-primary uppercase tracking-widest hover:opacity-80 transition-opacity">
                             <span className="material-symbols-outlined text-lg">headphones</span>
                             Listen
-                          </button>
-                          <button className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary uppercase tracking-widest transition-colors">
+                          </Link>
+                          <Link to={postUrl} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary uppercase tracking-widest transition-colors">
                             <span className="material-symbols-outlined text-lg">menu_book</span>
                             Read
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>
