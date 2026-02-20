@@ -42,6 +42,7 @@ import MemberLayout from '../member/layouts/MemberLayout';
 import AdminDashboard from '../admin/AdminDashboard';
 import ContentManager from '../admin/ContentManager';
 import SeriesManager from '../admin/SeriesManager';
+import SeriesDetailManager from '../admin/SeriesDetailManager';
 import UserManager from '../admin/UserManager';
 import InteractionModeration from '../admin/InteractionModeration';
 import EmailCampaigns from '../admin/EmailCampaigns';
@@ -115,6 +116,7 @@ const AppRouter: React.FC = () => {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="content" element={<ContentManager />} />
           <Route path="series" element={<SeriesManager />} />
+          <Route path="series/:id" element={<SeriesDetailManager />} />
           <Route path="drafts" element={<DraftsManager />} />
           <Route path="podcasting" element={<AdminPlaceholder title="Podcasting" icon="podcasts" description="Manage and publish podcast episodes directly from here." />} />
           <Route path="users" element={<AdminOnlyRoute><UserManager /></AdminOnlyRoute>} />
