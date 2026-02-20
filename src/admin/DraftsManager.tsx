@@ -31,17 +31,18 @@ const DraftsManager: React.FC = () => {
     try {
       setLoading(true);
       const allDrafts = await draftService.getAllDrafts();
-      setDrafts(allDrafts);
+      setDrafts(Array.isArray(allDrafts) ? allDrafts : []);
     } catch (err) {
       console.error('Error loading drafts:', err);
       setError('Failed to load drafts');
+      setDrafts([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterDrafts = () => {
-    let filtered = [...drafts];
+    let filtered = Array.isArray(drafts) ? [...drafts] : [];
 
     // Search filter
     if (searchQuery.trim()) {
@@ -162,11 +163,13 @@ const DraftsManager: React.FC = () => {
 
   const getUniqueTypes = (): string[] => {
     const types = new Set<string>();
-    drafts.forEach(draft => {
-      if (draft.content_type_name) {
-        types.add(draft.content_type_name);
-      }
-    });
+    if (Array.isArray(drafts)) {
+      drafts.forEach(draft => {
+        if (draft.content_type_name) {
+          types.add(draft.content_type_name);
+        }
+      });
+    }
     return Array.from(types).sort();
   };
 

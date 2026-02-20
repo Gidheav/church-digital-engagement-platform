@@ -272,7 +272,6 @@ const SeriesDetailManager: React.FC = () => {
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div className="bg-white border-b border-slate-200 px-6 py-5 flex-shrink-0">
         <div className="max-w-7xl mx-auto w-full">
-
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-4">
             <button
@@ -289,7 +288,7 @@ const SeriesDetailManager: React.FC = () => {
           <div className="flex items-start justify-between gap-6">
             <div className="flex gap-5">
               {/* Cover image */}
-              <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+              <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 hidden sm:block">
                 {series.cover_image ? (
                   <img src={series.cover_image} alt={series.title} className="h-full w-full object-cover" />
                 ) : (
@@ -306,7 +305,7 @@ const SeriesDetailManager: React.FC = () => {
                     {series.title}
                   </h2>
                   {series.is_featured && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider border border-amber-200">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider border border-amber-200 xs:inline-block">
                       Featured
                     </span>
                   )}
@@ -321,8 +320,8 @@ const SeriesDetailManager: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Meta line */}
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                {/* Meta line: hide on mobile */}
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2 hidden md:flex">
                   {authorName && (
                     <span className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[14px]">person</span>
@@ -350,8 +349,8 @@ const SeriesDetailManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Header actions */}
-            <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Header actions: hide on mobile */}
+            <div className="flex items-center gap-3 flex-shrink-0 hidden md:flex">
               <a
                 href={`/library/series/${series.slug}`}
                 target="_blank"
@@ -372,7 +371,7 @@ const SeriesDetailManager: React.FC = () => {
           </div>
 
           {/* Metrics strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 border-t border-slate-100 pt-4">
+          <div className="hidden md:grid grid-cols-4 gap-4 mt-6 border-t border-slate-100 pt-4">
             {[
               { icon: 'visibility', bg: 'bg-blue-50 text-blue-600', label: 'Total Views', value: totalViews.toLocaleString() },
               { icon: 'article', bg: 'bg-purple-50 text-purple-600', label: 'Posts Published', value: `${series.published_post_count} / ${series.post_count}` },
@@ -577,9 +576,9 @@ const SeriesDetailManager: React.FC = () => {
             </div>
           )}
 
-          {/* ── Edit Series tab ─────────────────────────────────── */}
+          {/* ── Edit Series tab: MOBILE VERSION (shown only on mobile) ─── */}
           {activeTab === 'edit' && (
-            <div className="flex flex-col gap-5">
+            <div className="flex md:hidden flex-col gap-4 px-4 py-6">
 
               {/* Status banners */}
               {editSuccess && (
@@ -595,15 +594,172 @@ const SeriesDetailManager: React.FC = () => {
                 </div>
               )}
 
-              {/* Two-column editor layout */}
-              <div className="flex flex-col lg:flex-row gap-5 items-start">
+              {/* Card: Series Details */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-6 flex flex-col gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={editForm.title}
+                      onChange={handleEditChange}
+                      disabled={editSaving}
+                      placeholder="e.g., The Divine Renovation"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white transition-colors font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Description</label>
+                    <textarea
+                      name="description"
+                      value={editForm.description}
+                      onChange={handleEditChange}
+                      disabled={editSaving}
+                      placeholder="What is this series about?"
+                      rows={4}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white resize-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Cover Image</label>
+                    <ImageUploadInput
+                      value={editForm.cover_image || ''}
+                      onChange={(url) => setEditForm(prev => ({ ...prev, cover_image: url }))}
+                      disabled={editSaving}
+                    />
+                  </div>
+                </div>
+              </div>
 
-                {/* ── Left column: Content ────────────────────── */}
-                <div className="flex-1 min-w-0 flex flex-col gap-5">
+              {/* Card: Visibility */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-800">Visibility</h3>
+                </div>
+                <div className="px-5 py-5 flex flex-col gap-2">
+                  {SERIES_VISIBILITY_OPTIONS.map(opt => (
+                    <label key={opt.value} className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        value={opt.value}
+                        checked={editForm.visibility === opt.value}
+                        onChange={handleEditChange}
+                        disabled={editSaving}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-                  {/* Card: Series Details */}
-                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden px-0 py-0">
-                    <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Card: Featured */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-800">Featured</h3>
+                </div>
+                <div className="px-5 py-5 flex flex-col gap-4">
+                  <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <p className="text-sm font-semibold text-slate-800">Feature this series</p>
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        name="is_featured"
+                        checked={editForm.is_featured}
+                        onChange={handleEditChange}
+                        disabled={editSaving}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors peer-disabled:opacity-50" />
+                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                    </div>
+                  </label>
+                  {editForm.is_featured && (
+                    <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Display Priority</label>
+                      <input
+                        type="number"
+                        name="featured_priority"
+                        value={editForm.featured_priority}
+                        onChange={handleEditChange}
+                        min={0}
+                        max={100}
+                        disabled={editSaving}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white transition-colors"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Save / Discard */}
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleEditSave}
+                  disabled={editSaving || !editForm.title.trim()}
+                  className="w-full px-5 py-2.5 rounded-lg bg-primary hover:opacity-90 text-white text-sm font-bold shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    {editSaving ? 'hourglass_empty' : 'check'}
+                  </span>
+                  {editSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (series) {
+                      setEditForm({
+                        title: series.title,
+                        description: series.description || '',
+                        cover_image: series.cover_image || '',
+                        visibility: series.visibility,
+                        is_featured: series.is_featured,
+                        featured_priority: series.featured_priority,
+                      });
+                    }
+                    setEditError('');
+                    setEditSuccess(false);
+                  }}
+                  disabled={editSaving}
+                  className="w-full px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Discard Changes
+                </button>
+              </div>
+
+            </div>
+          )}
+
+          {/* ── Edit Series tab: DESKTOP VERSION (shown on md+) ─── */}
+          {activeTab === 'edit' && (
+            <div className="hidden md:flex md:flex-col gap-5 px-8 py-8">
+
+              {/* Status banners */}
+              {editSuccess && (
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-3 text-sm font-medium">
+                  <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
+                  Series updated successfully.
+                </div>
+              )}
+              {editError && (
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-3 text-sm font-medium">
+                  <span className="material-symbols-outlined text-red-400 text-lg">error_outline</span>
+                  {editError}
+                </div>
+              )}
+
+              {/* Main content area with left column and right sidebar */}
+              <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
+
+                {/* Left column: Series Details Grid */}
+                <div className="flex-1 min-w-0 flex flex-col gap-5 w-full">
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="px-8 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {/* Left: Title & Description */}
                       <div className="flex flex-col gap-6">
                         <div>
@@ -636,7 +792,7 @@ const SeriesDetailManager: React.FC = () => {
                         </div>
                       </div>
                       {/* Right: Cover Image */}
-                      <div className="flex flex-col gap-4 items-center justify-center">
+                      <div className="flex flex-col gap-4 items-center justify-center w-full">
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 w-full">Cover Image</label>
                         <div className="w-full flex flex-col items-center gap-3">
                           <ImageUploadInput
@@ -648,7 +804,6 @@ const SeriesDetailManager: React.FC = () => {
                             <button
                               type="button"
                               className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
-                              // onClick={handleReplaceImage}
                               disabled={editSaving}
                             >
                               Replace
@@ -669,7 +824,7 @@ const SeriesDetailManager: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Right column: Settings sidebar ──────────── */}
+                {/* Right column: Settings sidebar */}
                 <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-5">
 
                   {/* Card: Visibility */}
@@ -814,7 +969,9 @@ const SeriesDetailManager: React.FC = () => {
                   </div>
 
                 </div>
+
               </div>
+
             </div>
           )}
 

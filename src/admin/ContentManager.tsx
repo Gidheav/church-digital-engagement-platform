@@ -1,8 +1,4 @@
-/**
- * Content Manager Component - Enterprise Edition
- * Professional content management with DataTable
- */
-
+// ContentManager.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -10,44 +6,97 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { UserRole } from '../types/auth.types';
 import postService, { Post } from '../services/post.service';
 import draftService, { Draft } from '../services/draft.service';
-import DataTable, { Column, StatusBadge, ActionMenu } from './components/DataTable';
-import { Card } from './components/Card';
-import {
-  PlusIcon,
-  EditIcon,
-  DeleteIcon,
-  EyeIcon,
-  FilterIcon,
-} from './components/Icons';
 import PostCreate from './PostCreate';
 import PostEdit from './PostEdit';
-import './styles/ContentManager.css';
+
+// Icons as inline components
+const PlusIcon = ({ size = 20 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>add</span>
+);
+const EditIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>edit</span>
+);
+const DeleteIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>delete</span>
+);
+const EyeIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>visibility</span>
+);
+const DraftIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>edit_note</span>
+);
+const ScheduleIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>schedule</span>
+);
+const PublishedIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>check_circle</span>
+);
+const TrashIcon = ({ size = 18 }: { size?: number }) => (
+  <span className="material-symbols-outlined" style={{ fontSize: size }}>delete_outline</span>
+);
 
 type ViewMode = 'list' | 'create' | 'edit';
 type ContentTab = 'ALL' | 'PUBLISHED' | 'DRAFTS' | 'TRASH';
+type ContentType = 'SERMON' | 'ARTICLE' | 'ANNOUNCEMENT' | '';
 
-type ContentRow = {
+interface ContentItem {
   id: string;
   title: string;
-  content_type_name?: string | null;
-  post_type?: string | null;
-  author: string;
-  author_name: string;
-  author_email?: string;
+  type: string;
+  typeLabel: string;
+  author: {
+    id: string;
+    name: string;
+    email?: string;
+  };
   status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
-  is_published: boolean;
-  published_at: string | null;
-  views_count: number;
-  created_at: string;
-  updated_at: string;
+  publishedAt: string | null;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
   source: 'post' | 'draft';
-  draft_id?: string;
-  post_id?: string | null;
-  content_type?: string | null;
-  is_deleted?: boolean;
-  search_text?: string;
-  time_since_save?: string; // For drafts only
-  last_autosave_at?: string; // For drafts only
+  isDeleted?: boolean;
+  timeSinceSave?: string;
+  lastAutosaveAt?: string;
+  coverImage?: string;
+  excerpt?: string;
+  postId?: string | null;
+}
+
+// Status Badge Component
+const StatusBadge: React.FC<{ status: string; scheduled?: boolean }> = ({ status, scheduled }) => {
+  const getStatusStyles = () => {
+    switch (status) {
+      case 'PUBLISHED':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'SCHEDULED':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'DRAFT':
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+      default:
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const getIcon = () => {
+    switch (status) {
+      case 'PUBLISHED':
+        return <PublishedIcon size={14} />;
+      case 'SCHEDULED':
+        return <ScheduleIcon size={14} />;
+      case 'DRAFT':
+        return <DraftIcon size={14} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusStyles()}`}>
+      {getIcon()}
+      {scheduled ? 'Scheduled' : status.charAt(0) + status.slice(1).toLowerCase()}
+    </span>
+  );
 };
 
 const ContentManager: React.FC = () => {
@@ -63,9 +112,10 @@ const ContentManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [loadingDeleted, setLoadingDeleted] = useState(false);
-  const [filterType, setFilterType] = useState<string>('');
+  const [filterType, setFilterType] = useState<ContentType>('');
   const [activeTab, setActiveTab] = useState<ContentTab>('ALL');
   const [creatingDraft, setCreatingDraft] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [appliedDraftId, setAppliedDraftId] = useState<string | null>(null);
 
   // Read initial values from query parameters
@@ -73,7 +123,6 @@ const ContentManager: React.FC = () => {
   const initialTab = (searchParams.get('tab') as ContentTab) || 'ALL';
 
   useEffect(() => {
-    // Set initial tab from query params
     if (initialTab && ['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
@@ -88,7 +137,6 @@ const ContentManager: React.FC = () => {
     if (activeTab === 'TRASH') {
       loadDeletedPosts();
     } else if (activeTab === 'DRAFTS') {
-      console.log('📋 [CONTENT MANAGER] DRAFTS tab activated, loading drafts...');
       loadDrafts();
     }
   }, [activeTab]);
@@ -109,10 +157,6 @@ const ContentManager: React.FC = () => {
       setLoading(true);
       const data = await postService.getAllPosts();
       
-      console.log('=== POSTS DATA RESPONSE ===');
-      console.log('Raw response:', data);
-      
-      // Handle paginated response from DRF
       let postsArray: Post[] = [];
       if (data && typeof data === 'object' && 'results' in data) {
         postsArray = (data as any).results || [];
@@ -121,21 +165,6 @@ const ContentManager: React.FC = () => {
       } else {
         postsArray = [];
       }
-      
-      console.log(`Total posts received: ${postsArray.length}`);
-      console.log('Current user:', user);
-      console.log(`User ID: ${user?.id} (type: ${typeof user?.id})`);
-      
-      postsArray.forEach((post, index) => {
-        console.log(`Post ${index}:`, {
-          id: post.id,
-          title: post.title,
-          author: post.author,
-          'author (type)': typeof post.author,
-          author_name: post.author_name,
-          author_email: post.author_email,
-        });
-      });
       
       setPosts(postsArray);
     } catch (err: any) {
@@ -172,9 +201,7 @@ const ContentManager: React.FC = () => {
   const loadDrafts = async () => {
     try {
       setLoadingDrafts(true);
-      console.log('📋 [CONTENT MANAGER] Starting to load drafts...');
       const response = await draftService.getAllDrafts();
-      console.log('📋 [CONTENT MANAGER] Raw drafts response:', response);
       
       let draftsArray: Draft[] = [];
       if (response && typeof response === 'object' && 'results' in response) {
@@ -185,15 +212,9 @@ const ContentManager: React.FC = () => {
         draftsArray = [];
       }
       
-      console.log(`📋 [CONTENT MANAGER] Processed drafts array length: ${draftsArray.length}`);
-      
-      if (draftsArray.length > 0) {
-        console.log('📋 [CONTENT MANAGER] First draft:', draftsArray[0]);
-      }
-      
       setDrafts(draftsArray);
     } catch (err: any) {
-      console.error('❌ [CONTENT MANAGER] Failed to load drafts:', err);
+      console.error('Failed to load drafts:', err);
       setDrafts([]);
     } finally {
       setLoadingDrafts(false);
@@ -218,6 +239,24 @@ const ContentManager: React.FC = () => {
     if (draft.draft_title) return draft.draft_title;
     if (draft.post_title) return draft.post_title;
     return 'Untitled Draft';
+  };
+
+  const getDraftExcerpt = (draft: Draft): string => {
+    if (draft.draft_data?.content) {
+      const plainText = draft.draft_data.content.replace(/<[^>]*>/g, '');
+      return plainText.substring(0, 120) + (plainText.length > 120 ? '...' : '');
+    }
+    return '';
+  };
+
+  const getTypeLabel = (type: string | null | undefined): string => {
+    if (!type) return 'Unknown';
+    const map: Record<string, string> = {
+      SERMON: 'Sermon',
+      ARTICLE: 'Article',
+      ANNOUNCEMENT: 'Announcement',
+    };
+    return map[type] || type;
   };
 
   const handleEditPost = async (post: Post) => {
@@ -263,25 +302,12 @@ const ContentManager: React.FC = () => {
   };
 
   const handleEditDraft = async (draft: Draft) => {
-    console.log('✏️ [EDIT DRAFT] Clicked edit for draft:', draft);
-    console.log('✏️ [EDIT DRAFT] Draft ID:', draft.id);
-    console.log('✏️ [EDIT DRAFT] Draft data from list:', draft.draft_data);
-    
     try {
-      // Fetch the FULL draft with draft_data from API
-      console.log('✏️ [EDIT DRAFT] Fetching full draft details from API...');
       const fullDraft = await draftService.getDraft(draft.id);
-      console.log('✏️ [EDIT DRAFT] Full draft received:', fullDraft);
-      console.log('✏️ [EDIT DRAFT] Full draft data:', fullDraft.draft_data);
-      console.log('✏️ [EDIT DRAFT] Title:', fullDraft.draft_data?.title);
-      console.log('✏️ [EDIT DRAFT] Content length:', fullDraft.draft_data?.content?.length || 0);
-      console.log('✏️ [EDIT DRAFT] Content preview:', fullDraft.draft_data?.content?.substring(0, 100));
-      console.log('✏️ [EDIT DRAFT] Last saved:', fullDraft.last_autosave_at);
-      
       setSelectedDraft(fullDraft);
       setViewMode('create');
     } catch (error) {
-      console.error('✏️ [EDIT DRAFT] Failed to fetch full draft:', error);
+      console.error('Failed to fetch full draft:', error);
       alert('Failed to load draft. Please try again.');
     }
   };
@@ -366,189 +392,110 @@ const ContentManager: React.FC = () => {
     setSelectedDraft(null);
   };
 
-  const rows: ContentRow[] = useMemo(() => {
+  const items: ContentItem[] = useMemo(() => {
     const combinedPosts = [...posts, ...deletedPosts];
-    const postRows: ContentRow[] = combinedPosts.map((post) => ({
+    const postItems: ContentItem[] = combinedPosts.map((post) => ({
       id: post.id,
       title: post.title || 'Untitled',
-      content_type_name: (post as any).content_type_name || post.post_type,
-      post_type: post.post_type,
-      author: post.author,
-      author_name: post.author_name,
-      author_email: post.author_email,
+      type: post.content_type || '',
+      typeLabel: getTypeLabel(post.content_type),
+      author: {
+        id: post.author,
+        name: post.author_name || 'Unknown',
+        email: post.author_email,
+      },
       status: post.status,
-      is_published: post.is_published,
-      published_at: post.published_at,
-      views_count: post.views_count || 0,
-      created_at: post.created_at,
-      updated_at: post.updated_at,
+      publishedAt: post.published_at,
+      views: post.views_count || 0,
+      createdAt: post.created_at,
+      updatedAt: post.updated_at,
       source: 'post',
-      content_type: post.content_type || null,
-      is_deleted: (post as any).is_deleted || false,
-      search_text: `${post.title || ''} ${post.author_name || ''}`.trim(),
+      isDeleted: (post as any).is_deleted || false,
+      coverImage: (post as any).featured_image,
+      excerpt: (post as any).excerpt,
     }));
 
-    const draftRows: ContentRow[] = drafts.map((draft) => {
+    const draftItems: ContentItem[] = drafts.map((draft) => {
       const title = getDraftTitle(draft);
+      const excerpt = getDraftExcerpt(draft);
       return {
         id: draft.id,
         title,
-        content_type_name: draft.content_type_name || 'Unknown Type',
-        post_type: null,
-        author: draft.user,
-        author_name: draft.user_name || 'Unknown',
-        author_email: draft.user_email || '',
+        type: draft.content_type || '',
+        typeLabel: getTypeLabel(draft.content_type),
+        author: {
+          id: draft.user,
+          name: draft.user_name || 'Unknown',
+          email: draft.user_email || '',
+        },
         status: 'DRAFT',
-        is_published: false,
-        published_at: null,
-        views_count: 0,
-        created_at: draft.created_at,
-        updated_at: draft.last_autosave_at,
+        publishedAt: null,
+        views: 0,
+        createdAt: draft.created_at,
+        updatedAt: draft.last_autosave_at,
         source: 'draft',
-        draft_id: draft.id,
-        post_id: draft.post,
-        content_type: draft.content_type || null,
-        is_deleted: false,
-        search_text: `${title} ${draft.preview || ''} ${draft.content_type_name || ''}`.trim(),
-        time_since_save: draft.time_since_save,
-        last_autosave_at: draft.last_autosave_at,
+        isDeleted: false,
+        timeSinceSave: draft.time_since_save,
+        lastAutosaveAt: draft.last_autosave_at,
+        excerpt,
+        postId: draft.post,
       };
     });
 
-    return [...postRows, ...draftRows];
+    return [...postItems, ...draftItems];
   }, [posts, deletedPosts, drafts]);
 
-  // Filter posts based on user role
-  const filteredPosts = rows.filter(row => {
-    // ADMIN: See all posts (no filtering by author)
-    // MODERATOR: Only see posts they created
+  const filteredItems = items.filter(item => {
+    // Role-based filtering
     if (user?.role === UserRole.MODERATOR) {
-      // Convert both to strings for comparison to avoid type mismatch
-      if (row.source === 'post') {
-        const postAuthorId = String(row.author);
-        const currentUserId = String(user.id);
-        
-        if (postAuthorId !== currentUserId) {
-          console.log(`[FILTER] Moderator "${user.email}" filtering out post "${row.title}" - post.author="${postAuthorId}" !== user.id="${currentUserId}"`);
-          return false;
-        }
-      }
-    }
-    // If ADMIN, all posts pass through (no author filtering)
-    
-    // Apply additional filters (type and status)
-    if (filterType) {
-      const rowType = String(row.content_type_name || row.post_type || '').toUpperCase();
-      if (rowType !== filterType.toUpperCase()) {
+      if (item.source === 'post' && String(item.author.id) !== String(user.id)) {
         return false;
       }
     }
 
+    // Tab filtering
     if (activeTab === 'PUBLISHED') {
-      return row.source === 'post' && row.status === 'PUBLISHED';
+      return item.source === 'post' && item.status === 'PUBLISHED' && !item.isDeleted;
     }
-
     if (activeTab === 'DRAFTS') {
-      return row.status === 'DRAFT' || row.source === 'draft';
+      return (item.status === 'DRAFT' || item.source === 'draft') && !item.isDeleted;
     }
-
     if (activeTab === 'TRASH') {
-      return row.is_deleted === true;
+      return item.isDeleted === true;
     }
 
-    // ALL
-    if (row.is_deleted) {
-      return false;
-    }
+    // ALL tab - exclude deleted
+    if (item.isDeleted) return false;
     return true;
+  }).filter(item => {
+    // Type filter
+    if (filterType && item.type !== filterType) return false;
+    return true;
+  }).filter(item => {
+    // Search filter
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      item.title.toLowerCase().includes(term) ||
+      item.author.name.toLowerCase().includes(term) ||
+      item.typeLabel.toLowerCase().includes(term)
+    );
   });
-  
-  console.log(`[FILTER RESULT] Role: ${user?.role}, Total rows: ${rows.length}, Filtered rows: ${filteredPosts.length}`);
-  if (rows.length > 0 && filteredPosts.length === 0) {
-    console.warn('[FILTER WARNING] No posts matched the filter!');
-    console.log('Rows:', rows);
-    console.log('User ID:', user?.id, '(type:', typeof user?.id, ')');
-  }
 
-  // DataTable columns
-  const columns: Column<ContentRow>[] = [
-    {
-      key: 'title',
-      label: 'Title',
-      sortable: true,
-      width: '35%',
-      render: (value, row) => (
-        <div className="post-title-cell">
-          <div className="post-title-text">{value || 'Untitled'}</div>
-          <div className="post-meta-text">
-            {row.content_type_name || row.post_type || 'Unknown Type'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'author_name',
-      label: 'Author',
-      sortable: true,
-      width: '15%',
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      width: '12%',
-      align: 'center',
-      render: (value) => {
-        const statusMap: Record<string, { variant: any; label: string }> = {
-          DRAFT: { variant: 'default', label: 'Draft' },
-          SCHEDULED: { variant: 'warning', label: 'Scheduled' },
-          PUBLISHED: { variant: 'success', label: 'Published' },
-        };
-        const status = statusMap[value] || { variant: 'default', label: value };
-        return <StatusBadge status={status.label} variant={status.variant} />;
-      },
-    },
-    {
-      key: 'published_at',
-      label: 'Published',
-      sortable: true,
-      width: '15%',
-      render: (value) => value ? new Date(value).toLocaleDateString() : '—',
-    },
-    {
-      key: 'views_count',
-      label: 'Views',
-      sortable: true,
-      width: '10%',
-      align: 'center',
-    },
-    {
-      key: 'created_at',
-      label: 'Created',
-      sortable: true,
-      width: '13%',
-      render: (value) => new Date(value).toLocaleDateString(),
-    },
-    {
-      key: 'time_since_save',
-      label: 'Last Saved',
-      sortable: false,
-      width: '13%',
-      render: (value, row) => {
-        // Only show for drafts
-        if (row.source !== 'draft' || !value) return '—';
-        return (
-          <div className="text-xs" title={row.last_autosave_at ? new Date(row.last_autosave_at).toLocaleString() : ''}>
-            {value}
-          </div>
-        );
-      },
-    },
-  ];
+  const getStatusCounts = () => {
+    const published = items.filter(i => i.status === 'PUBLISHED' && !i.isDeleted).length;
+    const drafts = items.filter(i => i.status === 'DRAFT' && !i.isDeleted).length;
+    const scheduled = items.filter(i => i.status === 'SCHEDULED' && !i.isDeleted).length;
+    const trash = items.filter(i => i.isDeleted).length;
+    const total = items.filter(i => !i.isDeleted).length;
+    return { total, published, drafts, scheduled, trash };
+  };
+
+  const counts = getStatusCounts();
 
   if (viewMode === 'create') {
     return (
-      <div className="content-manager-pro">
+      <div className="h-full overflow-auto bg-slate-50">
         <PostCreate 
           key={selectedDraft?.id || 'new'}
           onSuccess={handleSuccess} 
@@ -561,13 +508,7 @@ const ContentManager: React.FC = () => {
 
   if (viewMode === 'edit' && selectedPost) {
     return (
-      <div className="content-manager-pro">
-        {/* <div className="page-header-pro">
-          <div className="page-title-section">
-            <h1 className="page-title">Edit Post</h1>
-            <p className="page-subtitle">Modify existing content</p>
-          </div>
-        </div>*/}
+      <div className="h-full overflow-auto bg-slate-50">
         <PostEdit
           postId={selectedPost.id}
           onSuccess={handleSuccess}
@@ -578,170 +519,360 @@ const ContentManager: React.FC = () => {
   }
 
   return (
-    <div className="content-manager-pro">
+    <div className="flex flex-col h-full overflow-hidden bg-slate-50">
       {/* Page Header */}
-      <div className="page-header-pro">
-        <div className="page-title-section">
-          <h1 className="page-title">Content Management</h1>
-          <p className="page-subtitle">
-            {user?.role === UserRole.ADMIN 
-              ? 'Manage all sermons, articles, and announcements' 
-              : 'Manage your sermons, articles, and announcements'}
-          </p>
+      <div className="bg-white border-b border-slate-200 px-8 py-5 flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">
+              Content Management
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {user?.role === UserRole.ADMIN 
+                ? 'Manage all sermons, articles, and announcements' 
+                : 'Manage your sermons, articles, and announcements'}
+            </p>
+          </div>
+          <button
+            onClick={handleCreateNew}
+            disabled={creatingDraft}
+            className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <PlusIcon size={18} />
+            Create New Post
+          </button>
         </div>
-        <button className="btn-primary-pro" onClick={handleCreateNew}>
-          <PlusIcon size={18} />
-          <span>Create New Post</span>
-        </button>
       </div>
-
-      {creatingDraft && (
-        <Card className="stat-mini-card">
-          <div className="stat-mini-label">Preparing draft...</div>
-          <div className="stat-mini-value">Please wait</div>
-        </Card>
-      )}
 
       {/* Stats Cards */}
-      <div className="stats-row-pro">
-        <Card className="stat-mini-card">
-          <div className="stat-mini-label">
-            {user?.role === UserRole.ADMIN ? 'Total Content' : 'My Content'}
+      <div className="bg-white border-b border-slate-200 px-8 py-4 flex-shrink-0">
+        <div className="max-w-6xl mx-auto grid grid-cols-5 gap-4">
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</p>
+            <p className="text-lg font-bold text-slate-900 mt-1">{counts.total}</p>
           </div>
-          <div className="stat-mini-value">{rows.filter(row => !row.is_deleted).length}</div>
-        </Card>
-        <Card className="stat-mini-card">
-          <div className="stat-mini-label">Published</div>
-          <div className="stat-mini-value">
-            {rows.filter(p => p.status === 'PUBLISHED').length}
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <PublishedIcon size={14} /> Published
+            </p>
+            <p className="text-lg font-bold text-green-600 mt-1">{counts.published}</p>
           </div>
-        </Card>
-        <Card className="stat-mini-card">
-          <div className="stat-mini-label">Drafts</div>
-          <div className="stat-mini-value">
-            {rows.filter(p => p.status === 'DRAFT').length}
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <DraftIcon size={14} /> Drafts
+            </p>
+            <p className="text-lg font-bold text-amber-600 mt-1">{counts.drafts}</p>
           </div>
-        </Card>
-        <Card className="stat-mini-card">
-          <div className="stat-mini-label">Scheduled</div>
-          <div className="stat-mini-value">
-            {rows.filter(p => p.status === 'SCHEDULED').length}
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <ScheduleIcon size={14} /> Scheduled
+            </p>
+            <p className="text-lg font-bold text-purple-600 mt-1">{counts.scheduled}</p>
           </div>
-        </Card>
-      </div>
-
-      {/* Tabs and Filter Row */}
-      <div className="tabs-filter-row">
-        {/* Tabs - Left Aligned */}
-        <div className="content-tabs-pro">
-          {(['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'] as ContentTab[]).map((tab) => (
-            <button
-              key={tab}
-              className={`content-tab ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Filter - Right Aligned */}
-        <div className="filter-wrapper">
-          <div className="filter-icon">
-            <FilterIcon size={16} />
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <TrashIcon size={14} /> Trash
+            </p>
+            <p className="text-lg font-bold text-slate-600 mt-1">{counts.trash}</p>
           </div>
-          <select
-            className="filter-select"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="">All Types</option>
-            <option value="SERMON">Sermons</option>
-            <option value="ARTICLE">Articles</option>
-            <option value="ANNOUNCEMENT">Announcements</option>
-          </select>
         </div>
       </div>
 
-      {/* DataTable */}
-      <DataTable
-        data={filteredPosts}
-        columns={columns}
-        loading={loading || loadingDrafts || loadingDeleted}
-        searchable={true}
-        searchPlaceholder="Search posts by title, author..."
-        emptyMessage="No posts found. Create your first post to get started."
-        actions={(row) => {
-          const dataRow = row as ContentRow;
-          const post = posts.find(p => p.id === dataRow.id) || null;
-          const draft = drafts.find(d => d.id === dataRow.id) || null;
+      {/* Search and Filter Bar */}
+      <div className="bg-white border-b border-slate-200 px-8 py-3 flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            {/* Tabs */}
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              {(['ALL', 'PUBLISHED', 'DRAFTS', 'TRASH'] as ContentTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                    activeTab === tab
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-          if (dataRow.source === 'draft' && draft) {
-            return (
-              <ActionMenu
-                actions={[
-                  {
-                    label: 'Edit',
-                    icon: <EditIcon size={16} />,
-                    onClick: () => handleEditDraft(draft),
-                  },
-                  {
-                    label: 'Publish',
-                    icon: <EyeIcon size={16} />,
-                    onClick: () => handlePublishDraft(draft),
-                  },
-                  {
-                    label: 'Delete',
-                    icon: <DeleteIcon size={16} />,
-                    onClick: () => handleDeleteDraft(draft),
-                    danger: true,
-                  },
-                ]}
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                <span className="material-symbols-outlined text-lg">search</span>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by title, author..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white"
               />
-            );
-          }
+            </div>
+          </div>
 
-          if (!post) {
-            return null;
-          }
+          {/* Type Filter Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterType('')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                filterType === ''
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              All Types
+            </button>
+            <button
+              onClick={() => setFilterType('SERMON')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                filterType === 'SERMON'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Sermons
+            </button>
+            <button
+              onClick={() => setFilterType('ARTICLE')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                filterType === 'ARTICLE'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Articles
+            </button>
+            <button
+              onClick={() => setFilterType('ANNOUNCEMENT')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                filterType === 'ANNOUNCEMENT'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Announcements
+            </button>
+          </div>
+        </div>
+      </div>
 
-          return (
-            <ActionMenu
-              actions={[
-                ...(post.is_published
-                  ? [
-                      {
-                        label: 'View',
-                        icon: <EyeIcon size={16} />,
-                        onClick: () => window.open(`/post/${post.id}`, '_blank'),
-                      },
-                    ]
-                  : []),
-                ...(canModifyPost(post)
-                  ? [
-                      {
-                        label: 'Edit',
-                        icon: <EditIcon size={16} />,
-                        onClick: () => handleEditPost(post),
-                      },
-                      {
-                        label: post.is_published ? 'Unpublish' : 'Publish',
-                        icon: <EyeIcon size={16} />,
-                        onClick: () => handleTogglePublish(post),
-                      },
-                      {
-                        label: 'Delete',
-                        icon: <DeleteIcon size={16} />,
-                        onClick: () => handleDeletePost(post),
-                        danger: true,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          );
-        }}
-      />
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Loading State */}
+          {(loading || loadingDrafts || loadingDeleted) && (
+            <div className="flex flex-col gap-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl border border-slate-200 h-24 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !loadingDrafts && !loadingDeleted && filteredItems.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-3xl text-slate-400">description</span>
+              </div>
+              <p className="text-slate-600 font-semibold text-base">
+                {searchTerm || filterType ? 'No content matches your filters' : 'No content yet'}
+              </p>
+              {!searchTerm && !filterType && activeTab === 'ALL' && (
+                <button
+                  onClick={handleCreateNew}
+                  className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
+                >
+                  Create your first post
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Content List */}
+          {!loading && !loadingDrafts && !loadingDeleted && filteredItems.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {filteredItems.map(item => (
+                <div
+                  key={`${item.source}-${item.id}`}
+                  onClick={() => {
+                    if (item.source === 'post' && item.status !== 'DRAFT') {
+                      handleEditPost(posts.find(p => p.id === item.id)!);
+                    } else if (item.source === 'draft') {
+                      const draft = drafts.find(d => d.id === item.id);
+                      if (draft) handleEditDraft(draft);
+                    }
+                  }}
+                  className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer"
+                >
+                  {/* Cover/Type Icon */}
+                  <div className="h-14 w-14 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
+                    {item.coverImage ? (
+                      <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl text-slate-300">
+                          {item.type === 'SERMON' ? 'mic' : 
+                           item.type === 'ARTICLE' ? 'article' : 
+                           item.type === 'ANNOUNCEMENT' ? 'campaign' : 'description'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-slate-900 truncate">{item.title}</h3>
+                      <StatusBadge status={item.status} />
+                      {item.source === 'draft' && (
+                        <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-medium border border-purple-200">
+                          Draft
+                        </span>
+                      )}
+                      {item.postId && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-200">
+                          Linked to Post
+                        </span>
+                      )}
+                    </div>
+
+                    {item.excerpt && (
+                      <p className="text-sm text-slate-500 mt-1 line-clamp-1">{item.excerpt}</p>
+                    )}
+
+                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">person</span>
+                        {item.author.name}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="px-2 py-0.5 bg-slate-100 rounded-full text-slate-600">
+                        {item.typeLabel}
+                      </span>
+                      {item.source === 'post' && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">visibility</span>
+                            {item.views.toLocaleString()} views
+                          </span>
+                        </>
+                      )}
+                      {item.source === 'draft' && item.timeSinceSave && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span className="flex items-center gap-1 text-amber-600" title={item.lastAutosaveAt}>
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            Saved {item.timeSinceSave}
+                          </span>
+                        </>
+                      )}
+                      {item.publishedAt && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span>
+                            {new Date(item.publishedAt).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div onClick={e => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
+                    {item.source === 'draft' ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            const draft = drafts.find(d => d.id === item.id);
+                            if (draft) handleEditDraft(draft);
+                          }}
+                          className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
+                          title="Edit draft"
+                        >
+                          <EditIcon size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const draft = drafts.find(d => d.id === item.id);
+                            if (draft) handlePublishDraft(draft);
+                          }}
+                          className="p-2 text-slate-400 hover:text-green-600 transition-colors rounded-lg hover:bg-slate-100"
+                          title="Publish draft"
+                        >
+                          <PublishedIcon size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const draft = drafts.find(d => d.id === item.id);
+                            if (draft) handleDeleteDraft(draft);
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                          title="Delete draft"
+                        >
+                          <DeleteIcon size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {item.status === 'PUBLISHED' && (
+                          <button
+                            onClick={() => window.open(`/post/${item.id}`, '_blank')}
+                            className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
+                            title="View post"
+                          >
+                            <EyeIcon size={18} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            const post = posts.find(p => p.id === item.id);
+                            if (post) handleEditPost(post);
+                          }}
+                          className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
+                          title="Edit post"
+                        >
+                          <EditIcon size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const post = posts.find(p => p.id === item.id);
+                            if (post) handleTogglePublish(post);
+                          }}
+                          className="p-2 text-slate-400 hover:text-amber-600 transition-colors rounded-lg hover:bg-slate-100"
+                          title={item.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                        >
+                          <PublishedIcon size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const post = posts.find(p => p.id === item.id);
+                            if (post) handleDeletePost(post);
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                          title="Delete post"
+                        >
+                          <DeleteIcon size={18} />
+                        </button>
+                      </>
+                    )}
+                    <span className="material-symbols-outlined text-slate-300 text-lg">chevron_right</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
