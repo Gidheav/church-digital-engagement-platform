@@ -91,7 +91,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
             onMouseLeave={() => setShowMegaMenu(false)}
           >
             <button 
-              className={`flex items-center gap-1 text-lg font-medium transition-colors ${
+              className={`flex items-center gap-1 text-sm font-medium transition-colors ${
                 isActive('library') ? 'text-primary' : 'text-text-main hover:text-primary'
               }`}
               aria-expanded={showMegaMenu}
@@ -113,7 +113,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           {/* Navigation Links */}
           <Link 
             to="/library/series" 
-            className={`text-lg font-medium transition-colors ${
+            className={`text-sm font-medium transition-colors ${
               isActive('series') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -121,7 +121,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           </Link>
           <Link 
             to="/practices" 
-            className={`text-lg font-medium transition-colors ${
+            className={`text-sm font-medium transition-colors ${
               isActive('practices') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -129,7 +129,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           </Link>
           <Link 
             to="/connect" 
-            className={`text-lg font-medium transition-colors ${
+            className={`text-sm font-medium transition-colors ${
               isActive('connect') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -142,7 +142,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           {!isAuthenticated ? (
             <button 
               onClick={() => navigate('/login')}
-              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-lg font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
+              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-sm font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
               aria-label="Login to your account"
             >
               Login
@@ -150,7 +150,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           ) : (
             <button 
               onClick={() => navigate('/member')}
-              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-lg font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
+              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-sm font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
               aria-label="Go to member portal"
             >
               Portal
@@ -190,7 +190,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
             <div className="flex items-center justify-between p-6 border-b border-accent-sand/30">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-2xl text-primary" aria-hidden="true">spa</span>
-                <span className="font-display font-semibold text-xl tracking-tight text-text-main">Menu</span>
+                <span className="font-display font-semibold text-base tracking-tight text-text-main">Menu</span>
               </div>
               <button 
                 onClick={() => setShowMobileMenu(false)}
@@ -205,56 +205,56 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
             <div className="flex flex-col p-6 space-y-2">
               <Link 
                 to="/" 
-                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-lg font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
                   isActive('home') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
                 }`}
                 onClick={() => setShowMobileMenu(false)}
               >
-                <span className="material-symbols-outlined text-xl">home</span>
+                <span className="material-symbols-outlined text-base">home</span>
                 Home
               </Link>
               
               <Link 
                 to="/library" 
-                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-lg font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
                   isActive('library') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
                 }`}
                 onClick={() => setShowMobileMenu(false)}
               >
-                <span className="material-symbols-outlined text-xl">library_books</span>
+                <span className="material-symbols-outlined text-base">library_books</span>
                 Library
               </Link>
               
               <Link 
                 to="/library/series" 
-                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-lg font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
                   isActive('series') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
                 }`}
                 onClick={() => setShowMobileMenu(false)}
               >
-                <span className="material-symbols-outlined text-xl">collections_bookmark</span>
+                <span className="material-symbols-outlined text-base">collections_bookmark</span>
                 Series
               </Link>
               
               <Link 
                 to="/practices" 
-                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-lg font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
                   isActive('practices') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
                 }`}
                 onClick={() => setShowMobileMenu(false)}
               >
-                <span className="material-symbols-outlined text-xl">self_improvement</span>
+                <span className="material-symbols-outlined text-base">self_improvement</span>
                 Practices
               </Link>
               
               <Link 
                 to="/connect" 
-                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-lg font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
                   isActive('connect') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
                 }`}
                 onClick={() => setShowMobileMenu(false)}
               >
-                <span className="material-symbols-outlined text-xl">group</span>
+                <span className="material-symbols-outlined text-base">group</span>
                 Connect
               </Link>
 
@@ -268,9 +268,9 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
                     setShowMobileMenu(false);
                     navigate('/login');
                   }}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-btn bg-primary text-white text-lg font-bold tracking-wide hover:bg-primary/90 transition-all duration-300"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-btn bg-primary text-white text-sm font-bold tracking-wide hover:bg-primary/90 transition-all duration-300"
                 >
-                  <span className="material-symbols-outlined text-xl">login</span>
+                  <span className="material-symbols-outlined text-base">login</span>
                   Login
                 </button>
               ) : (
@@ -279,9 +279,9 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
                     setShowMobileMenu(false);
                     navigate('/member');
                   }}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-btn bg-primary text-white text-lg font-bold tracking-wide hover:bg-primary/90 transition-all duration-300"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-btn bg-primary text-white text-sm font-bold tracking-wide hover:bg-primary/90 transition-all duration-300"
                 >
-                  <span className="material-symbols-outlined text-xl">dashboard</span>
+                  <span className="material-symbols-outlined text-base">dashboard</span>
                   Portal
                 </button>
               )}

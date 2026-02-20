@@ -101,7 +101,7 @@ const DraftsManager: React.FC = () => {
   };
 
   const handleDelete = async (draftId: string) => {
-    if (!confirm('Delete this draft? This action cannot be undone.')) {
+    if (!window.confirm('Delete this draft? This action cannot be undone.')) {
       return;
     }
 
@@ -124,7 +124,7 @@ const DraftsManager: React.FC = () => {
       return;
     }
 
-    if (!confirm(`Delete ${selectedDrafts.size} draft(s)? This action cannot be undone.`)) {
+    if (!window.confirm(`Delete ${selectedDrafts.size} draft(s)? This action cannot be undone.`)) {
       return;
     }
 

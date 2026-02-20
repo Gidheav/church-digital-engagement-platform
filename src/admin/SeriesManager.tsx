@@ -1,351 +1,316 @@
 /**
- * Series Manager Component - Enterprise Edition
- * Professional series management with DataTable
+ * Series Manager Component - Enterprise Command Hub
+ * Renders inside AdminLayout (sidebar + topbar provided by layout)
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../auth/AuthContext';
-import { useConfirm } from '../contexts/ConfirmContext';
-import { UserRole } from '../types/auth.types';
-import seriesService, { Series, SeriesVisibility } from '../services/series.service';
-import DataTable, { Column, StatusBadge, ActionMenu } from './components/DataTable';
-import { Card } from './components/Card';
-import {
-  PlusIcon,
-  EditIcon,
-  DeleteIcon,
-  FilterIcon,
-  FolderIcon,
-} from './components/Icons';
-import SeriesCreate from './SeriesCreate';
-import SeriesEdit from './SeriesEdit';
-import './styles/SeriesManager.css';
+import React, { useState } from 'react';
 
-type ViewMode = 'list' | 'create' | 'edit';
+interface SeriesPost {
+  id: number;
+  order: number;
+  title: string;
+  sermonId: string;
+  date: string;
+  duration: string;
+  tags: string[];
+  engagement: { views: number | string; comments: number | string };
+  status: 'Published' | 'Draft';
+  isActive?: boolean;
+}
+
+interface Resource {
+  id: number;
+  name: string;
+  type: 'pdf' | 'doc';
+  dateAdded: string;
+  size: string;
+}
 
 const SeriesManager: React.FC = () => {
-  const { user } = useAuth();
-  const { confirm } = useConfirm();
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
-  const [seriesList, setSeriesList] = useState<Series[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterVisibility, setFilterVisibility] = useState<string>('');
-  const [filterFeatured, setFilterFeatured] = useState<boolean | null>(null);
-  const [filterSearch, setFilterSearch] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [bulkEdit, setBulkEdit] = useState(false);
+  const [adminNotes, setAdminNotes] = useState('');
 
-  useEffect(() => {
-    loadSeries();
-  }, []);
-
-  const loadSeries = async () => {
-    try {
-      setLoading(true);
-      const data = await seriesService.getAllSeries();
-      setSeriesList(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      console.error('Failed to load series:', err);
-      setSeriesList([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const canModifySeries = (series: Series): boolean => {
-    if (user?.role === UserRole.ADMIN) return true;
-    if (user?.role === UserRole.MODERATOR) {
-      return series.author.id === user.id;
-    }
-    return false;
-  };
-
-  const handleCreateNew = () => {
-    setViewMode('create');
-  };
-
-  const handleEdit = (series: Series) => {
-    if (!canModifySeries(series)) {
-      alert('You do not have permission to edit this series');
-      return;
-    }
-    setSelectedSeries(series);
-    setViewMode('edit');
-  };
-
-  const handleDelete = async (series: Series) => {
-    if (!canModifySeries(series)) {
-      alert('You do not have permission to delete this series');
-      return;
-    }
-
-    confirm({
-      title: 'Delete Series',
-      message: `Are you sure you want to delete "${series.title}"? Posts will remain but be removed from this series.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await seriesService.deleteSeries(series.id);
-          await loadSeries();
-        } catch (err: any) {
-          alert(err.response?.data?.message || 'Failed to delete series');
-        }
-      },
-    });
-  };
-
-  const handleSuccess = () => {
-    setViewMode('list');
-    setSelectedSeries(null);
-    loadSeries();
-  };
-
-  const handleCancel = () => {
-    setViewMode('list');
-    setSelectedSeries(null);
-  };
-
-  // Filter series based on user role and filters
-  const filteredSeries = seriesList.filter(series => {
-    // Role-based filtering
-    if (user?.role === UserRole.MODERATOR) {
-      const seriesAuthorId = String(series.author);
-      const currentUserId = String(user.id);
-      if (seriesAuthorId !== currentUserId) {
-        return false;
-      }
-    }
-    
-    // Visibility filter
-    if (filterVisibility && series.visibility !== filterVisibility) {
-      return false;
-    }
-
-    // Featured filter
-    if (filterFeatured !== null && series.is_featured !== filterFeatured) {
-      return false;
-    }
-
-    // Search filter
-    if (filterSearch) {
-      const searchLower = filterSearch.toLowerCase();
-      return (
-        series.title.toLowerCase().includes(searchLower) ||
-        (series.description && series.description.toLowerCase().includes(searchLower))
-      );
-    }
-
-    return true;
-  });
-
-  const getVisibilityBadge = (visibility: SeriesVisibility) => {
-    const map: Record<SeriesVisibility, { variant: any; label: string }> = {
-      PUBLIC: { variant: 'success', label: 'Public' },
-      MEMBERS_ONLY: { variant: 'warning', label: 'Members Only' },
-      HIDDEN: { variant: 'default', label: 'Hidden' },
-    };
-    const config = map[visibility];
-    return <StatusBadge status={config.label} variant={config.variant} />;
-  };
-
-  // DataTable columns
-  const columns: Column<Series>[] = [
+  const posts: SeriesPost[] = [
     {
-      key: 'title',
-      label: 'Series',
-      sortable: true,
-      width: '35%',
-      render: (value, row) => (
-        <div className="series-title-cell">
-          <div className="series-icon">
-            <FolderIcon size={20} />
-          </div>
-          <div className="series-info">
-            <div className="series-title-text">{value}</div>
-            {row.description && (
-              <div className="series-description-preview">
-                {row.description.substring(0, 80)}
-                {row.description.length > 80 ? '...' : ''}
-              </div>
-            )}
-          </div>
-        </div>
-      ),
+      id: 1, order: 1, title: 'The Foundation of Quiet', sermonId: '#8291',
+      date: 'Oct 12, 2023', duration: '42 mins', tags: ['Peace'],
+      engagement: { views: 4200, comments: 32 }, status: 'Published',
     },
     {
-      key: 'author_name',
-      label: 'Author',
-      sortable: true,
-      width: '15%',
+      id: 2, order: 2, title: 'Building Internal Bridges', sermonId: '#8292',
+      date: 'Oct 19, 2023', duration: '38 mins', tags: ['Connection'],
+      engagement: { views: 3100, comments: 18 }, status: 'Published', isActive: true,
     },
     {
-      key: 'visibility',
-      label: 'Visibility',
-      sortable: true,
-      width: '12%',
-      align: 'center',
-      render: (value) => getVisibilityBadge(value as SeriesVisibility),
+      id: 3, order: 3, title: 'Maintaining the Structure', sermonId: '#8293',
+      date: 'Oct 26, 2023', duration: '45 mins', tags: ['Discipline'],
+      engagement: { views: '--', comments: '--' }, status: 'Draft',
     },
     {
-      key: 'post_count',
-      label: 'Posts',
-      sortable: true,
-      width: '8%',
-      align: 'center',
-      render: (value) => (
-        <span className="series-post-count">{value || 0}</span>
-      ),
-    },
-    {
-      key: 'is_featured',
-      label: 'Featured',
-      sortable: true,
-      width: '10%',
-      align: 'center',
-      render: (value) => value ? '⭐' : '—',
-    },
-    {
-      key: 'created_at',
-      label: 'Created',
-      sortable: true,
-      width: '12%',
-      render: (value) => new Date(value).toLocaleDateString(),
+      id: 4, order: 4, title: 'The Roof of Reconciliation', sermonId: '#8294',
+      date: 'Nov 02, 2023', duration: '40 mins', tags: ['Healing'],
+      engagement: { views: '--', comments: '--' }, status: 'Draft',
     },
   ];
 
-  if (viewMode === 'create') {
-    return (
-      <div className="series-manager">
-        <SeriesCreate onSuccess={handleSuccess} onCancel={handleCancel} />
-      </div>
-    );
-  }
+  const resources: Resource[] = [
+    { id: 1, name: 'Discussion Guide.pdf', type: 'pdf', dateAdded: 'Oct 10', size: '2.4 MB' },
+    { id: 2, name: 'Series_Overview.docx', type: 'doc', dateAdded: 'Oct 11', size: '450 KB' },
+  ];
 
-  if (viewMode === 'edit' && selectedSeries) {
-    return (
-      <div className="series-manager">
-        <SeriesEdit series={selectedSeries} onSuccess={handleSuccess} onCancel={handleCancel} />
-      </div>
+  const getStatusBadge = (status: SeriesPost['status']) =>
+    status === 'Published' ? (
+      <span className="px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+    ) : (
+      <span className="px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full border border-slate-200 text-slate-500">Draft</span>
     );
-  }
+
+  const getTagColor = (tag: string) => {
+    const colors: Record<string, string> = {
+      Peace: 'bg-blue-50 text-blue-700', Connection: 'bg-blue-50 text-blue-700',
+      Discipline: 'bg-blue-50 text-blue-700', Healing: 'bg-blue-50 text-blue-700',
+    };
+    return colors[tag] || 'bg-slate-100 text-slate-600';
+  };
+
+  const filteredPosts = posts.filter(p =>
+    p.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="series-manager">
-      <Card>
-        <div className="series-manager-header">
-          <div className="header-left">
-            <h2>
-              <FolderIcon size={24} style={{ marginRight: '8px' }} />
-              Series Management
-            </h2>
-            <p className="header-subtitle">
-              Organize related content into series
-            </p>
-          </div>
-          <button className="btn-primary" onClick={handleCreateNew}>
-            <PlusIcon size={20} />
-            <span>Create Series</span>
-          </button>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden">
 
-        {/* Filters */}
-        <div className="series-filters">
-          <div className="filter-wrapper">
-            <div className="filter-icon">
-              <FilterIcon size={16} />
+      {/* ── Page Header ─────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-slate-200 px-6 py-5 flex-shrink-0">
+        <div className="max-w-7xl mx-auto w-full">
+          <nav className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-4">
+            <span>Series Management</span>
+            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+            <span className="text-slate-900">The Architecture of Peace</span>
+          </nav>
+
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex gap-5">
+              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                <span className="material-symbols-outlined text-3xl">account_tree</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">The Architecture of Peace</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider border border-green-200">Active</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                  {([
+                    { icon: 'person', label: 'Author', value: 'Pastor James' },
+                    { icon: 'calendar_today', label: 'Created', value: 'Oct 10, 2023' },
+                    { icon: 'schedule', label: 'Duration', value: '2h 45m' },
+                    { icon: 'group', label: 'Audience', value: 'General' },
+                  ] as const).map((m, i) => (
+                    <React.Fragment key={m.label}>
+                      {i > 0 && <span className="w-1 h-1 rounded-full bg-slate-300" />}
+                      <span className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">{m.icon}</span>
+                        {m.label}: <strong>{m.value}</strong>
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
             </div>
-            <select
-              value={filterVisibility}
-              onChange={(e) => setFilterVisibility(e.target.value)}
-              className="filter-select"
-            >
-              <option value="">All Visibility</option>
-              <option value="PUBLIC">Public</option>
-              <option value="MEMBERS_ONLY">Members Only</option>
-              <option value="HIDDEN">Hidden</option>
-            </select>
-          </div>
-
-          <div className="filter-wrapper">
-            <div className="filter-icon">
-              <FilterIcon size={16} />
-            </div>
-            <select
-              value={filterFeatured === null ? '' : String(filterFeatured)}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFilterFeatured(value === '' ? null : value === 'true');
-              }}
-              className="filter-select"
-            >
-              <option value="">All Featured</option>
-              <option value="true">Featured Only</option>
-              <option value="false">Not Featured</option>
-            </select>
-          </div>
-
-          <div className="filter-group filter-search">
-            <input
-              type="text"
-              placeholder="Search series..."
-              value={filterSearch}
-              onChange={(e) => setFilterSearch(e.target.value)}
-              className="filter-input"
-            />
-          </div>
-        </div>
-
-        {/* DataTable */}
-        <DataTable
-          columns={columns}
-          data={filteredSeries}
-          loading={loading}
-          onRowClick={(series) => {
-            if (canModifySeries(series)) {
-              handleEdit(series);
-            }
-          }}
-          actions={(series) => (
-            <ActionMenu
-              actions={[
-                {
-                  icon: <EditIcon size={16} />,
-                  label: 'Edit',
-                  onClick: () => handleEdit(series),
-                },
-                {
-                  icon: <DeleteIcon size={16} />,
-                  label: 'Delete',
-                  onClick: () => handleDelete(series),
-                  danger: true,
-                },
-              ].filter(() => {
-                // Only show actions for series the user can modify
-                return canModifySeries(series);
-              })}
-            />
-          )}
-        />
-
-        {filteredSeries.length === 0 && !loading && (
-          <div className="empty-state">
-            <FolderIcon size={48} />
-            <h3>No Series Found</h3>
-            <p>
-              {filterSearch || filterVisibility || filterFeatured !== null
-                ? 'No series match your filters. Try adjusting your search.'
-                : 'Get started by creating your first series.'}
-            </p>
-            {!filterSearch && !filterVisibility && filterFeatured === null && (
-              <button className="btn-primary" onClick={handleCreateNew}>
-                <PlusIcon size={20} />
-                <span>Create First Series</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                View as Congregation
               </button>
-            )}
+              <button className="bg-primary hover:opacity-90 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">save</span>
+                Save Changes
+              </button>
+            </div>
           </div>
-        )}
-      </Card>
+
+          {/* Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 border-t border-slate-100 pt-4">
+            {[
+              { icon: 'visibility', bg: 'bg-blue-50 text-blue-600', label: 'Total Views', value: '12.4k', badge: '↑ 12%' },
+              { icon: 'donut_large', bg: 'bg-purple-50 text-purple-600', label: 'Avg. Completion', value: '68%', badge: null },
+              { icon: 'share', bg: 'bg-orange-50 text-orange-600', label: 'Shares', value: '842', badge: null },
+              { icon: 'bookmark', bg: 'bg-teal-50 text-teal-600', label: 'Saves', value: '156', badge: null },
+            ].map((m) => (
+              <div key={m.label} className="flex items-center gap-3">
+                <div className={`p-1.5 rounded ${m.bg}`}>
+                  <span className="material-symbols-outlined text-lg">{m.icon}</span>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">{m.label}</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {m.value}
+                    {m.badge && <span className="text-green-600 text-[10px] font-normal ml-1">{m.badge}</span>}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tabs ────────────────────────────────────────────────────── */}
+      <div className="border-b border-slate-200 bg-white px-6 flex-shrink-0">
+        <div className="max-w-7xl mx-auto w-full">
+          <nav className="flex -mb-px space-x-8">
+            <button className="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg">list_alt</span>
+              Posts
+              <span className="bg-primary/10 text-primary py-0.5 px-2 rounded-full text-xs ml-1">4</span>
+            </button>
+            {(['settings', 'analytics', 'folder_open', 'share_reviews'] as const).map((icon, i) => (
+              <button key={icon} className="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                <span className="material-symbols-outlined text-lg">{icon}</span>
+                {['Settings', 'Analytics', 'Resources', 'SEO/Sharing'][i]}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* ── Scrollable Content ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+        <div className="max-w-7xl mx-auto flex gap-6">
+
+          {/* Left — Posts table */}
+          <div className="flex-1 flex flex-col gap-4 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="relative w-72">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="material-symbols-outlined text-slate-400 text-lg">search</span>
+                </div>
+                <input
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
+                  placeholder="Search posts in series..."
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={bulkEdit} onChange={(e) => setBulkEdit(e.target.checked)} />
+                  <div className="relative w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
+                  <span className="ms-2 text-xs font-medium text-slate-600">Bulk Edit</span>
+                </label>
+                <button className="text-slate-500 hover:text-primary p-2">
+                  <span className="material-symbols-outlined">filter_list</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="w-8 px-4 py-3" />
+                    {['Order', 'Post Title', 'Date/Time', 'Tags', 'Engagement', 'Status', 'Action'].map((h, i) => (
+                      <th key={h} className={`px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider ${i === 6 ? 'text-right' : 'text-left'} ${i === 1 ? 'w-1/3' : ''}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {filteredPosts.map((post) => (
+                    <tr key={post.id} className={`group transition-colors hover:bg-slate-50 ${post.isActive ? 'bg-primary/5 border-l-4 border-primary' : ''} ${post.status === 'Draft' ? 'opacity-60' : ''}`}>
+                      <td className="px-4 py-3 text-center">
+                        <span className="material-symbols-outlined text-slate-400 text-lg" style={{ cursor: 'grab' }}>drag_indicator</span>
+                      </td>
+                      <td className={`px-4 py-3 whitespace-nowrap text-sm ${post.isActive ? 'text-primary font-bold' : 'text-slate-500'}`}>
+                        {post.order.toString().padStart(2, '0')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-bold text-slate-900">{post.title}</div>
+                        <div className="text-xs text-slate-500">Sermon ID: {post.sermonId}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-xs text-slate-900">{post.date}</div>
+                        <div className="text-xs text-slate-500">{post.duration}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTagColor(post.tags[0])}`}>{post.tags[0]}</span>
+                        {post.tags.length > 1 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 ml-1">+{post.tags.length - 1}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">visibility</span>{post.engagement.views}</span>
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">chat_bubble</span>{post.engagement.comments}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">{getStatusBadge(post.status)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <button className="text-slate-400 hover:text-slate-600"><span className="material-symbols-outlined text-lg">more_horiz</span></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button className="group flex items-center justify-center gap-3 p-6 border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-white rounded-lg transition-all w-full">
+              <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/20 transition-colors">
+                <span className="material-symbols-outlined text-xl">add</span>
+              </div>
+              <div className="text-left">
+                <span className="block text-sm font-semibold text-slate-600 group-hover:text-primary">Add Post to Series</span>
+                <span className="block text-[10px] text-slate-400 uppercase tracking-tighter">Select from existing sermons or create new</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Right — Resources + Notes */}
+          <div className="w-80 flex-shrink-0 flex flex-col gap-4">
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-slate-900">Series Resources</h3>
+                <button className="text-primary hover:opacity-80 p-1"><span className="material-symbols-outlined text-lg">add_circle</span></button>
+              </div>
+              <ul className="space-y-3">
+                {resources.map((resource) => (
+                  <li key={resource.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-slate-50 cursor-pointer group">
+                    <span className={`material-symbols-outlined text-2xl mt-0.5 ${resource.type === 'pdf' ? 'text-red-500' : 'text-blue-500'}`}>
+                      {resource.type === 'pdf' ? 'picture_as_pdf' : 'description'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-primary">{resource.name}</p>
+                      <p className="text-[10px] text-slate-500">Added {resource.dateAdded} · {resource.size}</p>
+                    </div>
+                    <button className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="material-symbols-outlined text-base">close</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <button className="w-full py-1.5 text-xs font-medium text-slate-500 hover:text-primary hover:bg-slate-50 rounded transition-colors border border-dashed border-slate-300">
+                  + Attach File
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 flex-1">
+              <h3 className="text-sm font-bold text-slate-900 mb-2">Admin Notes</h3>
+              <textarea
+                className="w-full h-32 text-xs p-2 border border-slate-200 rounded-md bg-slate-50 focus:ring-primary focus:border-primary resize-none"
+                placeholder="Add internal notes for other admins..."
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+              <div className="flex justify-end mt-2">
+                <button className="text-xs text-primary font-medium hover:underline">Save Note</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };

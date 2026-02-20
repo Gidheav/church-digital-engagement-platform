@@ -4,17 +4,17 @@
  */
 
 .admin-sidebar-pro {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--sidebar-width);
+  position: relative;
+  width: 256px;
+  min-width: 256px;
+  height: 100%;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
+  z-index: 10;
   transition: transform var(--transition-base);
+  overflow: hidden;
 }
 
 /* Mobile Close Button */
@@ -292,6 +292,13 @@
 /* === Mobile Responsive === */
 @media (max-width: 1024px) {
   .admin-sidebar-pro {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 256px;
+    height: 100vh;
+    z-index: 1000;
     transform: translateX(-100%);
   }
   

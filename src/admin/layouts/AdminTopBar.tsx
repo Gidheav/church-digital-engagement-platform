@@ -1,70 +1,21 @@
-/**
- * Admin Top Bar - Enterprise Edition
- * Professional header with mobile hamburger, breadcrumbs, theme toggle, user menu
- */
-
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import {
-  SunIcon,
-  MoonIcon,
-  MenuIcon,
-  BellIcon,
-  LogOutIcon,
-  SettingsIcon,
-  UserIcon,
-  ChevronDownIcon
-} from '../components/Icons';
 import './AdminTopBar.css';
 
-interface Breadcrumb {
-  label: string;
-  onClick?: () => void;
-}
-
 interface TopBarProps {
-  title?: string;
-  subtitle?: string;
-  breadcrumbs?: Breadcrumb[];
-  actions?: React.ReactNode;
-  onMenuClick?: () => void; // Mobile hamburger
+  onMenuClick?: () => void;
 }
 
-const AdminTopBar: React.FC<TopBarProps> = ({
-  title,
-  subtitle,
-  breadcrumbs,
-  actions,
-  onMenuClick
-}) => {
+const AdminTopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
 
-  // Theme management
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('admin-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-    
-    setIsDarkMode(shouldBeDark);
-    document.documentElement.setAttribute('data-theme', shouldBeDark ? 'dark' : 'light');
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    const themeValue = newTheme ? 'dark' : 'light';
-    localStorage.setItem('admin-theme', themeValue);
-    document.documentElement.setAttribute('data-theme', themeValue);
-  };
-
-  // Click outside to close menus
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -74,165 +25,167 @@ const AdminTopBar: React.FC<TopBarProps> = ({
         setShowNotifications(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
   const getUserInitials = () => {
-    if (!user) return 'U';
-    const firstName = user.firstName || '';
-    const lastName = user.lastName || '';
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    if (firstName) return firstName.substring(0, 2).toUpperCase();
-    if (user.email) return user.email.substring(0, 2).toUpperCase();
-    return 'U';
+    const first = user?.firstName?.charAt(0) || '';
+    const last = user?.lastName?.charAt(0) || '';
+    return (first + last).toUpperCase() || 'U';
   };
 
   return (
-    <header className="admin-topbar-pro">
-      <div className="topbar-left">
-        {/* Mobile Hamburger */}
+    <header className="flex h-14 w-full items-center justify-between border-b border-border-light bg-white px-4 z-50 flex-shrink-0">
+      {/* Left */}
+      <div className="flex items-center gap-4">
         {onMenuClick && (
           <button
-            className="topbar-hamburger"
             onClick={onMenuClick}
+            className="rounded p-1.5 text-slate-soft hover:bg-slate-100 hover:text-primary transition-colors lg:hidden"
             aria-label="Toggle menu"
           >
-            <MenuIcon size={24} />
+            <span className="material-symbols-outlined text-base">menu</span>
           </button>
         )}
-
-        {/* Breadcrumbs */}
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="topbar-breadcrumbs">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={index}>
-                {index > 0 && <span className="breadcrumb-separator">/</span>}
-                {crumb.onClick ? (
-                  <button className="breadcrumb-link" onClick={crumb.onClick}>
-                    {crumb.label}
-                  </button>
-                ) : (
-                  <span className="breadcrumb-current">{crumb.label}</span>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
-
-        {/* Title */}
-        {title && (
-          <div className="topbar-title-block">
-            <h1 className="topbar-title">{title}</h1>
-            {subtitle && <p className="topbar-subtitle">{subtitle}</p>}
+        <div className="flex items-center gap-3 text-primary">
+          <span className="material-symbols-outlined text-xl text-primary">spa</span>
+          <h1 className="font-display font-semibold text-sm tracking-tight text-slate-deep hidden sm:block">
+            Serene Sanctuary
+          </h1>
+        </div>
+        <div className="h-6 w-px bg-border-light hidden md:block"></div>
+        <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-bold uppercase tracking-wider">System: Online</span>
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="topbar-right">
-        {/* Custom Actions */}
-        {actions && <div className="topbar-custom-actions">{actions}</div>}
+      {/* Center: Search */}
+      <div className="flex-1 max-w-xl px-6 hidden sm:block">
+        <div className="relative w-full">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-soft text-base">
+            search
+          </span>
+          <input
+            className="w-full rounded border border-border-light bg-slate-50 py-1.5 pl-10 pr-12 text-xs focus:border-primary focus:outline-none placeholder:text-slate-400 text-slate-deep"
+            placeholder="Search admin (Ctrl+K)"
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+            <kbd className="rounded bg-white px-1.5 py-0.5 text-xs text-slate-soft font-sans border border-border-light">Ctrl</kbd>
+            <kbd className="rounded bg-white px-1.5 py-0.5 text-xs text-slate-soft font-sans border border-border-light">K</kbd>
+          </div>
+        </div>
+      </div>
 
+      {/* Right */}
+      <div className="flex items-center gap-2">
         {/* Notifications */}
-        <div className="topbar-dropdown" ref={notifMenuRef}>
+        <div className="relative" ref={notifMenuRef}>
           <button
-            className="topbar-icon-btn topbar-notif-btn"
             onClick={() => setShowNotifications(!showNotifications)}
+            className="relative rounded p-2 text-slate-soft hover:bg-slate-100 hover:text-primary transition-colors"
             aria-label="Notifications"
           >
-            <BellIcon size={20} />
-            <span className="notif-badge">3</span>
+            <span className="material-symbols-outlined text-base">notifications</span>
+            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-red-500 border-2 border-white"></span>
           </button>
-
           {showNotifications && (
-            <div className="dropdown-menu dropdown-notif">
-              <div className="dropdown-header">
-                <h3>Notifications</h3>
-                <button className="link-btn-sm">Mark all read</button>
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-lg border border-border-light bg-white shadow-lg z-50">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border-light">
+                <h3 className="text-xs font-bold text-slate-deep">Notifications</h3>
+                <button className="text-xs text-primary font-semibold hover:underline">Mark all read</button>
               </div>
-              <div className="notif-list">
-                <div className="notif-item unread">
-                  <div className="notif-dot"></div>
-                  <div className="notif-content">
-                    <p className="notif-title">New comment awaiting moderation</p>
-                    <p className="notif-time">5 minutes ago</p>
+              <div className="divide-y divide-slate-50">
+                {[
+                  { title: 'New comment awaiting moderation', time: '5 mins ago', unread: true },
+                  { title: 'New member registration', time: '1 hour ago', unread: true },
+                  { title: 'System backup completed', time: '3 hours ago', unread: false },
+                ].map((n, i) => (
+                  <div key={i} className={`flex gap-3 px-4 py-3 ${n.unread ? 'bg-blue-50/40' : ''}`}>
+                    {n.unread && <div className="mt-1.5 size-1.5 rounded-full bg-primary flex-shrink-0"></div>}
+                    <div className={n.unread ? '' : 'pl-3'}>
+                      <p className="text-xs text-slate-deep">{n.title}</p>
+                      <p className="text-xs text-slate-soft mt-0.5">{n.time}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="notif-item unread">
-                  <div className="notif-dot"></div>
-                  <div className="notif-content">
-                    <p className="notif-title">New member registration</p>
-                    <p className="notif-time">1 hour ago</p>
-                  </div>
-                </div>
-                <div className="notif-item">
-                  <div className="notif-content">
-                    <p className="notif-title">System backup completed</p>
-                    <p className="notif-time">3 hours ago</p>
-                  </div>
-                </div>
+                ))}
               </div>
-              <div className="dropdown-footer">
-                <button className="link-btn-block">View all notifications</button>
+              <div className="px-4 py-2 border-t border-border-light">
+                <button className="w-full text-center text-xs text-primary font-semibold hover:underline">
+                  View all notifications
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Theme Toggle */}
         <button
-          className="topbar-icon-btn"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          onClick={() => navigate('/admin/settings')}
+          className="rounded p-2 text-slate-soft hover:bg-slate-100 hover:text-primary transition-colors"
+          aria-label="Help"
         >
-          {isDarkMode ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+            <span className="material-symbols-outlined text-base">help</span>
         </button>
 
-        {/* User Menu */}
-        <div className="topbar-dropdown" ref={userMenuRef}>
-          <button
-            className="topbar-user-btn"
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            aria-label="User menu"
-          >
-            <div className="user-avatar-sm">{getUserInitials()}</div>
-            <span className="user-name-desktop">{user?.firstName || 'User'}</span>
-            <ChevronDownIcon size={16} />
-          </button>
+        <div className="w-px h-6 bg-border-light mx-1"></div>
 
+        {/* User Menu */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2.5 rounded px-2 py-1.5 hover:bg-slate-50 transition-colors"
+          >
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-bold text-slate-deep leading-none">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-xs text-slate-soft uppercase font-semibold mt-0.5">{user?.role}</p>
+            </div>
+            <div className="size-8 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+              {getUserInitials()}
+            </div>
+          </button>
           {showUserMenu && (
-            <div className="dropdown-menu dropdown-user">
-              <div className="dropdown-user-info">
-                <div className="user-avatar-lg">{getUserInitials()}</div>
-                <div className="user-details">
-                  <p className="user-name">{user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || 'User'}</p>
-                  <p className="user-email">{user?.email || 'user@example.com'}</p>
-                  <p className="user-role-badge">{user?.role || 'User'}</p>
-                </div>
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border-light bg-white shadow-lg z-50">
+              <div className="px-4 py-3 border-b border-border-light">
+                <p className="text-xs font-bold text-slate-deep">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-slate-soft mt-0.5">{user?.email}</p>
               </div>
-              <div className="dropdown-divider"></div>
-              <button className="dropdown-item" onClick={() => navigate('/admin/profile')}>
-                <UserIcon size={16} />
-                <span>Profile</span>
-              </button>
-              <button className="dropdown-item" onClick={() => navigate('/admin/settings')}>
-                <SettingsIcon size={16} />
-                <span>Settings</span>
-              </button>
-              <div className="dropdown-divider"></div>
-              <button className="dropdown-item danger" onClick={handleLogout}>
-                <LogOutIcon size={16} />
-                <span>Sign Out</span>
-              </button>
+              <div className="py-1">
+                <button
+                  onClick={() => { navigate('/admin/settings'); setShowUserMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-xs text-slate-deep hover:bg-slate-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm text-slate-soft">settings</span>
+                  <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => { navigate('/'); setShowUserMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-xs text-slate-deep hover:bg-slate-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm text-slate-soft">public</span>
+                  <span>Public Site</span>
+                </button>
+                <div className="border-t border-border-light my-1"></div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">logout</span>
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

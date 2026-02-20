@@ -2,28 +2,20 @@
  * Admin Layout Styles - Enterprise Edition
  */
 
+/* Legacy class — kept for backwards compat, not used in new flex layout */
 .admin-layout-pro {
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .admin-main-content {
-  margin-left: var(--sidebar-width);
-  min-height: 100vh;
-  transition: margin-left var(--transition-base);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .admin-content-area {
-  margin-top: var(--topbar-height);
   padding: var(--space-6);
-  min-height: calc(100vh - var(--topbar-height));
-}
-
-/* Mobile Responsive */
-@media (max-width: 1024px) {
-  .admin-main-content {
-    margin-left: 0;
-  }
 }
 
 @media (max-width: 768px) {

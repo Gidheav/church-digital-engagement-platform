@@ -4,14 +4,10 @@
  */
 
 import React from 'react';
-import { useAuth } from '../auth/AuthContext';
-import { UserRole } from '../types/auth.types';
 import DashboardOverview from './DashboardOverview';
 
-const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
-
-  return <DashboardOverview userRole={user?.role || UserRole.MEMBER} />;
-};
+const AdminDashboard: React.FC = () => (
+  <DashboardOverview />
+);
 
 export default AdminDashboard;

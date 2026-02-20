@@ -66,15 +66,25 @@ class SeriesPostSerializer(serializers.ModelSerializer):
     """Minimal serializer for posts in a series"""
     content_type_name = serializers.CharField(source='get_content_type_name', read_only=True)
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    excerpt = serializers.SerializerMethodField()
     
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'content_type_name', 'author_name',
             'series_order', 'is_published', 'published_at',
-            'views_count', 'featured_image', 'created_at'
+            'views_count', 'featured_image', 'created_at', 'excerpt'
         ]
         read_only_fields = fields
+    
+    def get_excerpt(self, obj):
+        """Return a plain-text excerpt from the post content (first 160 chars)"""
+        import re
+        text = re.sub(r'<[^>]+>', '', obj.content or '')
+        text = text.strip()
+        if len(text) > 160:
+            return text[:160].rsplit(' ', 1)[0] + '…'
+        return text
 
 
 class SeriesDetailSerializer(serializers.ModelSerializer):

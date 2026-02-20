@@ -64,7 +64,7 @@ const FilterSection = memo(({
             <span className="material-symbols-outlined">search</span>
           </span>
           <input 
-            className="w-full bg-transparent border-b border-border-subtle focus:border-primary px-8 py-3 outline-none ring-0 placeholder:text-text-muted/60 text-text-main text-lg font-medium transition-colors" 
+            className="w-full bg-transparent border-b border-border-subtle focus:border-primary px-8 py-3 outline-none ring-0 placeholder:text-text-muted/60 text-text-main text-base font-medium transition-colors" 
             placeholder="Search topic, verse, speaker..." 
             type="text"
             aria-label="Search sermons"
@@ -134,7 +134,7 @@ const FilterGroup = memo(({
               onChange={() => onChange(option)}
               aria-label={`Filter by ${option}`}
             />
-            <span className={`text-base text-text-main ${activeValues.includes(option) ? 'font-medium' : ''} group-hover:text-primary transition-colors`}>
+            <span className={`text-sm text-text-main ${activeValues.includes(option) ? 'font-medium' : ''} group-hover:text-primary transition-colors`}>
               {option}
             </span>
           </label>
@@ -255,7 +255,7 @@ const SermonCard = memo(({ post }: { post: PublicPost }) => {
           <span className="text-border-subtle" aria-hidden="true">•</span>
           <span>{post.author_name}</span>
         </div>
-        <h3 className="font-serif text-2xl font-medium text-text-main leading-snug group-hover:underline decoration-1 underline-offset-4 mb-3">
+        <h3 className="font-serif text-xl font-medium text-text-main leading-snug group-hover:underline decoration-1 underline-offset-4 mb-3">
           {post.title}
         </h3>
         <div className="mt-auto flex flex-wrap gap-2">
@@ -463,8 +463,8 @@ const LibraryPage: React.FC = () => {
       <div className="w-full max-w-[1440px] mx-auto px-6 lg:px-10 py-12">
         {/* Page Header */}
         <header className="mb-12">
-          <h1 className="font-serif text-5xl md:text-6xl font-normal text-text-main tracking-tight">The Library</h1>
-          <p className="mt-4 text-text-muted text-xl font-light max-w-2xl">
+          <h1 className="font-serif text-4xl md:text-5xl font-normal text-text-main tracking-tight">The Library</h1>
+          <p className="mt-4 text-text-muted text-lg font-light max-w-2xl">
             A curated repository of wisdom, teaching, and theological resources designed for your spiritual formation.
           </p>
         </header>
@@ -495,7 +495,7 @@ const LibraryPage: React.FC = () => {
 
             {/* Load More */}
             <div className="mt-20 flex justify-center">
-              <button className="text-base font-semibold tracking-wide text-text-main border-b-2 border-text-main hover:text-primary hover:border-primary transition-colors pb-1 uppercase">
+              <button className="text-sm font-semibold tracking-wide text-text-main border-b-2 border-text-main hover:text-primary hover:border-primary transition-colors pb-1 uppercase">
                 Load More Sermons
               </button>
             </div>

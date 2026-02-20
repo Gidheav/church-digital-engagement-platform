@@ -1,12 +1,12 @@
 // SeriesPage.tsx
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
-import SharedNavigation from '../shared/SharedNavigation';
-import seriesService, { Series } from '../../services/series.service';
+import SharedNavigation from '../../shared/SharedNavigation';
+import seriesService, { Series } from '../../../services/series.service';
 
 // Lazy load footer for performance
 const Footer = lazy(() =>
-  import('../sections').then(module => ({ default: module.Footer }))
+  import('../../sections').then(module => ({ default: module.Footer }))
 );
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ const SeriesPage: React.FC = () => {
                 const partCount  = series.published_post_count ?? series.post_count ?? 0;
 
                 return (
-                  <Link key={series.id} to={`/series/${series.slug}`} className="block">
+                  <Link key={series.id} to={`/library/series/${series.slug}`} className="block">
                     <article className="group flex flex-col gap-3 cursor-pointer">
 
                       {/* Cover image */}

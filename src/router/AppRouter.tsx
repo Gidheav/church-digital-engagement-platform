@@ -17,14 +17,13 @@ import ToastContainer from '../components/ToastContainer';
 // Public pages
 import HomePage from '../public/HomePage';
 import LibraryPage from '../public/library/LibraryPage';
-import SeriesPage from '../public/library/SeriesPage';
+import SeriesPage from '../public/library/Series/SeriesPage';
+import SeriesPanel from '../public/library/Series/SeriesPanel';
 import SermonDetail from '../public/library/sermon/SermonDetail';
 import ConnectPage from '../public/ConnectPage';
 import EventsPage from '../public/EventsPage';
 import LoginPage from '../public/LoginPage';
 import RegisterPage from '../public/RegisterPage';
-import ContentList from '../public/ContentList';
-import ContentDetail from '../public/ContentDetail';
 import AdminAuth from '../pages/AdminAuth';
 import Forbidden from '../pages/Forbidden';
 import VerifyEmail from '../pages/VerifyEmail';
@@ -48,6 +47,8 @@ import InteractionModeration from '../admin/InteractionModeration';
 import EmailCampaigns from '../admin/EmailCampaigns';
 import ModerationReports from '../admin/ModerationReports';
 import AppSettings from '../admin/AppSettings';
+import DraftsManager from '../admin/DraftsManager';
+import AdminPlaceholder from '../admin/AdminPlaceholder';
 import AdminLayout from '../admin/layouts/AdminLayout';
 import AdminOnlyRoute from '../admin/components/AdminOnlyRoute';
 
@@ -60,13 +61,14 @@ const AppRouter: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/library/series" element={<SeriesPage />} />
+        <Route path="/library/series/:slug" element={<SeriesPanel />} />
         <Route path="/library/sermon/:id" element={<SermonDetail />} />
         <Route path="/connect" element={<ConnectPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/content" element={<ContentList />} />
-        <Route path="/content/:id" element={<ContentDetail />} />
+        <Route path="/content" element={<Navigate to="/library" replace />} />
+        <Route path="/content/:id" element={<Navigate to="/library" replace />} />
         
         {/* Admin Authentication (Separate from member auth) */}
         <Route path="/admin-auth" element={<AdminAuth />} />
@@ -113,8 +115,14 @@ const AppRouter: React.FC = () => {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="content" element={<ContentManager />} />
           <Route path="series" element={<SeriesManager />} />
+          <Route path="drafts" element={<DraftsManager />} />
+          <Route path="podcasting" element={<AdminPlaceholder title="Podcasting" icon="podcasts" description="Manage and publish podcast episodes directly from here." />} />
           <Route path="users" element={<AdminOnlyRoute><UserManager /></AdminOnlyRoute>} />
           <Route path="moderation" element={<InteractionModeration />} />
+          <Route path="small-groups" element={<AdminPlaceholder title="Small Groups" icon="groups_2" description="Oversee and manage church small group communities." />} />
+          <Route path="prayer-wall" element={<AdminPlaceholder title="Prayer Wall" icon="volunteer_activism" description="Monitor and moderate community prayer requests." />} />
+          <Route path="events" element={<AdminPlaceholder title="Events Calendar" icon="event" description="Create and manage church events and service schedules." />} />
+          <Route path="volunteers" element={<AdminPlaceholder title="Volunteers" icon="manage_accounts" description="Coordinate volunteer roles, schedules and assignments." />} />
           <Route path="email" element={<EmailCampaigns />} />
           <Route path="reports" element={<ModerationReports />} />
           <Route path="settings" element={<AdminOnlyRoute><AppSettings /></AdminOnlyRoute>} />

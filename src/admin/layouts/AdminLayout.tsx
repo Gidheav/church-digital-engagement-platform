@@ -1,12 +1,8 @@
-/**
- * Admin Layout Component - Enterprise Edition
- * Responsive layout with sidebar and topbar
- */
-
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AdminTopBar from './AdminTopBar';
+import AdminRightSidebar from './AdminRightSidebar';
 import './AdminLayout.css';
 
 interface AdminLayoutProps {
@@ -17,39 +13,28 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Determine active view from current route
   const getActiveView = () => {
     const path = location.pathname;
-    if (path === '/admin' || path === '/admin/') {
-      return 'overview';
-    }
-    // Extract view from /admin/{view}
-    const match = path.match(/^\/admin\/([^\/]+)/);
+    if (path === '/admin' || path === '/admin/') return 'overview';
+    const match = path.match(/^\/admin\/([^/]+)/);
     return match ? match[1] : 'overview';
   };
 
-  const handleMenuClick = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const handleSidebarClose = () => {
-    setIsSidebarOpen(false);
-  };
+  const isDashboard = location.pathname === '/admin' || location.pathname === '/admin/';
 
   return (
-    <div className="admin-layout-pro">
-      <Sidebar
-        activeView={getActiveView()}
-        isOpen={isSidebarOpen}
-        onClose={handleSidebarClose}
-      />
-      
-      <div className="admin-main-content">
-        <AdminTopBar onMenuClick={handleMenuClick} />
-        
-        <main className="admin-content-area">
+    <div className="h-screen flex flex-col overflow-hidden bg-background-light">
+      <AdminTopBar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          activeView={getActiveView()}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+        <main className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' as const }}>
           {children || <Outlet />}
         </main>
+        {isDashboard && <AdminRightSidebar />}
       </div>
     </div>
   );

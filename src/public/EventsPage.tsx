@@ -153,17 +153,17 @@ const EventRow = memo<{ event: Event }>(({ event }) => {
         {/* Date */}
         <div className="col-span-2 flex md:block items-center justify-between mb-4 md:mb-0">
           <div className="flex flex-col">
-            <span className="font-display font-bold text-text-main text-xl leading-none">{event.date}</span>
-            <span className="font-mono text-sm text-text-muted mt-1">{event.day}</span>
+            <span className="font-display font-bold text-text-main text-base leading-none">{event.date}</span>
+            <span className="font-mono text-xs text-text-muted mt-1">{event.day}</span>
           </div>
           {/* Mobile Status */}
           <div className="md:hidden">
             {event.status === 'approaching' ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-accent-warning/10 border border-accent-warning/20 text-sm font-bold text-yellow-700">
-                <span className="material-symbols-outlined text-[14px]">warning</span> Low
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-accent-warning/10 border border-accent-warning/20 text-xs font-bold text-yellow-700">
+                <span className="material-symbols-outlined text-[12px]">warning</span> Low
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-1 rounded bg-background-light border border-border-subtle text-sm font-medium text-text-muted">
+              <span className="inline-flex items-center px-2 py-1 rounded bg-background-light border border-border-subtle text-xs font-medium text-text-muted">
                 {event.status === 'open' && 'Open'}
                 {event.status === 'full' && 'Full'}
                 {event.status === 'recurring' && 'Recurring'}
@@ -176,7 +176,7 @@ const EventRow = memo<{ event: Event }>(({ event }) => {
         <div className="col-span-4 mb-3 md:mb-0">
           <div className="flex items-center gap-2">
             <h3
-              className={`font-display font-bold text-lg text-text-main ${
+              className={`font-display font-bold text-sm text-text-main ${
                 event.status !== 'full'
                   ? 'group-hover:text-primary transition-colors cursor-pointer'
                   : 'cursor-pointer'
@@ -193,11 +193,11 @@ const EventRow = memo<{ event: Event }>(({ event }) => {
               </span>
             )}
           </div>
-          <p className="text-base text-text-muted mt-1 line-clamp-1">{event.description}</p>
+          <p className="text-sm text-text-muted mt-0.5 line-clamp-1">{event.description}</p>
         </div>
 
         {/* Location */}
-        <div className="col-span-2 flex items-center gap-2 mb-3 md:mb-0 text-base font-medium text-text-muted">
+        <div className="col-span-2 flex items-center gap-2 mb-3 md:mb-0 text-sm font-medium text-text-muted">
           <span className="material-symbols-outlined text-[16px] md:hidden">location_on</span>
           {event.location}
         </div>
@@ -205,11 +205,11 @@ const EventRow = memo<{ event: Event }>(({ event }) => {
         {/* Capacity */}
         <div className="col-span-2 mb-4 md:mb-0">
           <div className="flex items-center justify-between md:justify-start gap-3 mb-1.5">
-            <span className="text-sm font-mono font-medium text-text-muted md:hidden">Availability</span>
+            <span className="text-xs font-mono font-medium text-text-muted md:hidden">Availability</span>
             {event.status === 'recurring' ? (
-              <span className="text-sm font-mono font-bold text-text-main">Open</span>
+              <span className="text-xs font-mono font-bold text-text-main">Open</span>
             ) : (
-              <span className="text-sm font-mono font-bold text-text-main">
+              <span className="text-xs font-mono font-bold text-text-main">
                 {event.capacity}
                 <span className="text-text-muted font-normal">/{event.total}</span>
               </span>
@@ -258,16 +258,16 @@ const MetricCard = memo<MetricCardProps>(({ icon, iconBg, iconColor, label, valu
       <div className={`p-1.5 ${iconBg} rounded ${iconColor}`}>
         <span className="material-symbols-outlined text-[20px]">{icon}</span>
       </div>
-      <span className="font-mono text-sm font-bold uppercase text-text-muted">{label}</span>
+      <span className="font-mono text-xs font-bold uppercase text-text-muted">{label}</span>
     </div>
     <div className="flex items-baseline gap-2">
       <span className="font-display text-2xl font-bold text-text-main">{value}</span>
       {trend && (
-        <span className="text-sm text-accent-success font-medium flex items-center">
+        <span className="text-xs text-accent-success font-medium flex items-center">
           <span className="material-symbols-outlined text-[14px]">trending_up</span> {trend}
         </span>
       )}
-      {subValue && <span className="text-sm text-text-muted font-medium">{subValue}</span>}
+      {subValue && <span className="text-xs text-text-muted font-medium">{subValue}</span>}
     </div>
   </div>
 ));
@@ -300,12 +300,12 @@ const EventsPage: React.FC = () => {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-2 py-1 bg-surface border border-border-subtle rounded-sm mb-2">
                 <span className="size-2 rounded-full bg-accent-success animate-pulse"></span>
-                <span className="font-mono text-xs uppercase tracking-wider text-text-muted font-bold">System Live</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted font-bold">System Live</span>
               </div>
               <h2 className="font-display text-4xl md:text-5xl font-extrabold text-text-main tracking-tight leading-[1.1]">
                 Events Ledger
               </h2>
-              <p className="text-text-muted text-lg max-w-2xl leading-relaxed">
+              <p className="text-text-muted text-base max-w-2xl leading-relaxed">
                 A high-density view of upcoming community gatherings and logistical data. Select an event to view detailed requirements.
               </p>
             </div>
@@ -316,7 +316,7 @@ const EventsPage: React.FC = () => {
                 <button
                   key={filter}
                   onClick={() => handleFilterChange(filter)}
-                  className={`px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                     activeFilter === filter
                       ? 'text-text-main bg-background-light rounded border border-border-subtle shadow-sm'
                       : 'text-text-muted hover:bg-background-light rounded'
@@ -354,11 +354,11 @@ const EventsPage: React.FC = () => {
         <div className="bg-surface rounded-lg border border-border-subtle shadow-card overflow-hidden">
           {/* Table Header */}
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-background-light border-b border-border-subtle items-center">
-            <div className="col-span-2 font-mono text-sm font-bold text-text-muted uppercase tracking-wider">Date</div>
-            <div className="col-span-4 font-mono text-sm font-bold text-text-muted uppercase tracking-wider">Event Name</div>
-            <div className="col-span-2 font-mono text-sm font-bold text-text-muted uppercase tracking-wider">Location</div>
-            <div className="col-span-2 font-mono text-sm font-bold text-text-muted uppercase tracking-wider">Capacity</div>
-            <div className="col-span-2 font-mono text-sm font-bold text-text-muted uppercase tracking-wider text-right">Action</div>
+            <div className="col-span-2 font-mono text-xs font-bold text-text-muted uppercase tracking-wider">Date</div>
+            <div className="col-span-4 font-mono text-xs font-bold text-text-muted uppercase tracking-wider">Event Name</div>
+            <div className="col-span-2 font-mono text-xs font-bold text-text-muted uppercase tracking-wider">Location</div>
+            <div className="col-span-2 font-mono text-xs font-bold text-text-muted uppercase tracking-wider">Capacity</div>
+            <div className="col-span-2 font-mono text-xs font-bold text-text-muted uppercase tracking-wider text-right">Action</div>
           </div>
 
           {/* Table Body */}
@@ -370,7 +370,7 @@ const EventsPage: React.FC = () => {
 
           {/* Table Footer / Pagination */}
           <div className="px-6 py-4 bg-background-light border-t border-border-subtle flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="font-mono text-sm text-text-muted">Showing {filteredEvents.length} of 12 upcoming events</span>
+            <span className="font-mono text-xs text-text-muted">Showing {filteredEvents.length} of 12 upcoming events</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePagePrev}
