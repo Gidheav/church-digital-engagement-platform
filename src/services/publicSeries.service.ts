@@ -228,7 +228,7 @@ class PublicSeriesService {
   private buildQueryParams(filters: SeriesFilters): Record<string, any> {
     const params: Record<string, any> = {};
     
-    if (filters.featured !== undefined) params.featured = filters.featured;
+    if (filters.featured !== undefined) params.is_featured = filters.featured;
     if (filters.visibility) params.visibility = filters.visibility;
     if (filters.author) params.author = filters.author;
     if (filters.search) params.search = filters.search;

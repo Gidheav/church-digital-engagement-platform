@@ -86,4 +86,8 @@ class EmailLogSerializer(serializers.ModelSerializer):
             'is_sent', 'is_delivered', 'is_opened', 'is_failed',
             'error_message', 'sent_at', 'delivered_at', 'opened_at', 'created_at'
         ]
-        read_only_fields = '__all__'
+        read_only_fields = [
+            'id', 'campaign', 'campaign_subject', 'recipient', 'recipient_email',
+            'is_sent', 'is_delivered', 'is_opened', 'is_failed',
+            'error_message', 'sent_at', 'delivered_at', 'opened_at', 'created_at'
+        ]

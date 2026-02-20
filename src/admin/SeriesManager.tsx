@@ -1,129 +1,265 @@
-/**
- * Series Manager - Post Organizer
- * Drag-and-drop post ordering for a series. Renders inside AdminLayout.
+﻿/**
+ * Series Manager
+ * Lists all series from the real API with create / edit / delete actions.
  */
-import React, { useState } from 'react';
-
-interface SeriesPost {
-  id: number;
-  part: number;
-  title: string;
-  date: string;
-  duration: string;
-  status: 'Published' | 'Draft';
-  isActive?: boolean;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import seriesService, { Series } from '../services/series.service';
+import SeriesCreate from './SeriesCreate';
+import SeriesEdit from './SeriesEdit';
 
 const SeriesManager: React.FC = () => {
-  const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [series, setSeries] = useState<Series[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingSeries, setEditingSeries] = useState<Series | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [posts, setPosts] = useState<SeriesPost[]>([
-    { id: 1, part: 1, title: 'The Foundation of Quiet', date: 'Oct 12, 2023', duration: '42 min', status: 'Published' },
-    { id: 2, part: 2, title: 'Building Internal Bridges', date: 'Oct 19, 2023', duration: '38 min', status: 'Published', isActive: true },
-    { id: 3, part: 3, title: 'Maintaining the Structure', date: 'Oct 26, 2023', duration: '45 min', status: 'Draft' },
-    { id: 4, part: 4, title: 'The Roof of Reconciliation', date: 'Nov 02, 2023', duration: '40 min', status: 'Draft' },
-  ]);
+  const fetchSeries = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await seriesService.getAllSeries();
+      setSeries(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load series');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleDragStart = (id: number) => setDraggedItem(id);
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-  const handleDrop = (targetId: number) => {
-    if (draggedItem === null) return;
-    const draggedIndex = posts.findIndex(p => p.id === draggedItem);
-    const targetIndex = posts.findIndex(p => p.id === targetId);
-    if (draggedIndex === -1 || targetIndex === -1) return;
-    const newPosts = [...posts];
-    const [dragged] = newPosts.splice(draggedIndex, 1);
-    newPosts.splice(targetIndex, 0, dragged);
-    setPosts(newPosts);
-    setDraggedItem(null);
+  useEffect(() => {
+    fetchSeries();
+  }, [fetchSeries]);
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      await seriesService.deleteSeries(id);
+      setSeries(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      alert('Failed to delete: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDeletingId(null);
+    }
   };
-  const handleRemovePost = (id: number) => setPosts(posts.filter(p => p.id !== id));
 
-  const getStatusBadge = (status: SeriesPost['status']) =>
-    status === 'Published' ? (
-      <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider">Published</span>
-    ) : (
-      <span className="px-2.5 py-1 rounded-full border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">Draft</span>
+  const filtered = series.filter(s =>
+    s.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const visibilityBadge = (v: string) => {
+    if (v === 'PUBLIC')
+      return (
+        <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+          Public
+        </span>
+      );
+    if (v === 'MEMBERS_ONLY')
+      return (
+        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+          Members Only
+        </span>
+      );
+    return (
+      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold">
+        Hidden
+      </span>
     );
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex-shrink-0">
-        <div className="max-w-5xl mx-auto flex flex-col gap-4">
-          <nav className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <span>Series Management</span>
-            <span className="material-symbols-outlined text-sm">chevron_right</span>
-            <span className="text-slate-900">The Architecture of Peace</span>
-          </nav>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-2xl">account_tree</span>
-              </div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">The Architecture of Peace</h2>
-            </div>
-            <button className="bg-primary hover:opacity-90 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">save</span>
-              Save Order
-            </button>
+      {/* Modals */}
+      {showCreate && (
+        <SeriesCreate
+          onSuccess={() => {
+            setShowCreate(false);
+            fetchSeries();
+          }}
+          onCancel={() => setShowCreate(false)}
+        />
+      )}
+      {editingSeries && (
+        <SeriesEdit
+          series={editingSeries}
+          onSuccess={() => {
+            setEditingSeries(null);
+            fetchSeries();
+          }}
+          onCancel={() => setEditingSeries(null)}
+        />
+      )}
+
+      {/* Page Header */}
+      <div className="bg-white border-b border-slate-200 px-8 py-5 flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Series Management
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {loading ? 'Loading...' : `${series.length} series total`}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            New Series
+          </button>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white border-b border-slate-100 px-8 py-3 flex-shrink-0">
+        <div className="max-w-6xl mx-auto">
+          <div className="relative w-80">
+            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+              <span className="material-symbols-outlined text-lg">search</span>
+            </span>
+            <input
+              type="text"
+              placeholder="Search series by title..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+            />
           </div>
         </div>
       </div>
 
-      {/* Scrollable post list */}
-      <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
-        <div className="max-w-5xl mx-auto flex flex-col gap-3">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              draggable
-              onDragStart={() => handleDragStart(post.id)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(post.id)}
-              className={[
-                'bg-white rounded-xl p-4 flex items-center gap-4 transition-all',
-                post.isActive
-                  ? 'border-2 border-primary ring-4 ring-primary/5 shadow-xl'
-                  : 'border border-slate-200 hover:border-slate-300',
-                post.status === 'Draft' && !post.isActive ? 'opacity-50' : '',
-              ].join(' ')}
-            >
-              <div className="text-slate-400 p-1 flex items-center" style={{ cursor: 'grab' }}>
-                <span className="material-symbols-outlined">drag_indicator</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-slate-900">Part {post.part}: {post.title}</h3>
-                <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">calendar_today</span>{post.date}
-                  </span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300" />
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">schedule</span>{post.duration}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {getStatusBadge(post.status)}
-                <button
-                  onClick={() => handleRemovePost(post.id)}
-                  className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                  title="Remove from Series"
-                >
-                  <span className="material-symbols-outlined">delete</span>
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto bg-slate-50 p-8">
+        <div className="max-w-6xl mx-auto">
 
-          <button className="mt-4 group flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-primary/5 rounded-xl transition-all">
-            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/20 transition-colors mb-2">
-              <span className="material-symbols-outlined text-2xl">add</span>
+          {/* Loading skeleton */}
+          {loading && (
+            <div className="flex flex-col gap-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl border border-slate-200 h-[72px] animate-pulse"
+                />
+              ))}
             </div>
-            <span className="text-sm font-semibold text-slate-600 group-hover:text-primary">Add Post to Series</span>
-            <span className="text-[10px] text-slate-400 uppercase tracking-tighter mt-1">Select from existing sermons or create new</span>
-          </button>
+          )}
+
+          {/* Error state */}
+          {!loading && error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+              <span className="material-symbols-outlined text-4xl text-red-400">error_outline</span>
+              <p className="mt-3 text-red-700 font-semibold">{error}</p>
+              <button onClick={fetchSeries} className="mt-4 text-sm text-primary underline">
+                Try again
+              </button>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && !error && filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-3xl text-slate-400">account_tree</span>
+              </div>
+              <p className="text-slate-600 font-semibold text-lg">
+                {searchTerm ? 'No series match your search' : 'No series yet'}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
+                >
+                  Create your first series
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Series list */}
+          {!loading && !error && filtered.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {filtered.map(s => (
+                <div
+                  key={s.id}
+                  className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 hover:border-slate-300 transition-all"
+                >
+                  {/* Cover thumbnail */}
+                  <div className="h-14 w-14 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
+                    {s.cover_image ? (
+                      <img src={s.cover_image} alt={s.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl text-slate-300">account_tree</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Series info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-slate-900 truncate">{s.title}</h3>
+                      {s.is_featured && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold border border-amber-200">
+                          Featured
+                        </span>
+                      )}
+                      {visibilityBadge(s.visibility)}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
+                      <span>{s.published_post_count} / {s.post_count} posts published</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span>{(s.total_views || 0).toLocaleString()} views</span>
+                      {s.author_name && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">person</span>
+                            {s.author_name}
+                          </span>
+                        </>
+                      )}
+                      {s.date_range?.start && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span>
+                            {new Date(s.date_range.start).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => setEditingSeries(s)}
+                      className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
+                      title="Edit series"
+                    >
+                      <span className="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s.id, s.title)}
+                      disabled={deletingId === s.id}
+                      className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
+                      title="Delete series"
+                    >
+                      <span className="material-symbols-outlined">
+                        {deletingId === s.id ? 'hourglass_empty' : 'delete'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
     </div>

@@ -61,6 +61,7 @@ export interface Series {
   posts: SeriesPost[];
   post_count: number;
   published_post_count: number;
+  date_range: { start: string; end: string | null } | null;
   
   // Analytics
   total_views: number;

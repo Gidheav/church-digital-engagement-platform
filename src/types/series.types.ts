@@ -3,13 +3,19 @@
  * TypeScript interfaces for Series feature
  */
 
+export interface SeriesAuthor {
+  id: string;
+  full_name: string;
+  profile_picture: string | null;
+}
+
 export interface Series {
   id: string;
   title: string;
   slug: string;
   description: string;
   cover_image: string | null;
-  author: string;
+  author: SeriesAuthor;
   author_name: string;
   author_email: string;
   visibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'HIDDEN';
@@ -41,6 +47,9 @@ export interface SeriesPost {
   published_at: string | null;
   views_count: number;
   featured_image: string | null;
+  video_url: string | null;
+  audio_url: string | null;
+  excerpt: string;
   created_at: string;
 }
 
