@@ -2,110 +2,114 @@
  * Icon System
  * Professional SVG icons using Lucide React
  * NO EMOJIS - Enterprise standard icons only
+ * 
+ * Using direct imports to ensure proper tree-shaking and production build compatibility
  */
 
-// Lucide React icons - Install: npm install lucide-react
-// Using direct imports for better tree-shaking
+import { 
+  LayoutDashboard, FileText, Users, Shield, Mail,
+  BarChart3, Settings, Home, Globe, MessageCircle,
+  ArrowRight, Activity, Plus, Edit, Trash2, Search,
+  Filter, Download, Upload, RefreshCw, Save, X,
+  Check, CheckCircle, AlertCircle, Info, ChevronDown,
+  ChevronUp, ChevronLeft, ChevronRight, MoreVertical,
+  Eye, EyeOff, Copy, ExternalLink, Send, Loader2,
+  XCircle, AlertTriangle, Clock,
+  Sun, Moon, Menu, LogOut, User, Bell, HelpCircle,
+  ChevronsLeft, ChevronsRight, Image, Video, Music,
+  File, Folder, Tag, Calendar, Type, MessageSquare,
+  Heart, Star, List, BookOpen, ArrowUp, ArrowDown,
+  ChevronsUpDown
+} from 'lucide-react';
 
 // Navigation Icons
-export {
-  LayoutDashboard as DashboardIcon,
-  FileText as ContentIcon,
-  Users as UsersIcon,
-  Shield as ModerationIcon,
-  Mail as EmailIcon,
-  Mail as MailIcon,
-  BarChart3 as ReportsIcon,
-  BarChart3 as ChartBarIcon,
-  Settings as SettingsIcon,
-  Home as HomeIcon,
-  Globe as GlobeIcon,
-  MessageCircle as MessageCircleIcon,
-  ArrowRight as ArrowRightIcon,
-  Activity as ActivityIcon,
-  Shield as ShieldIcon,
-} from 'lucide-react';
+export const DashboardIcon = LayoutDashboard;
+export const ContentIcon = FileText;
+export const UsersIcon = Users;
+export const ModerationIcon = Shield;
+export const EmailIcon = Mail;
+export const MailIcon = Mail;
+export const ReportsIcon = BarChart3;
+export const ChartBarIcon = BarChart3;
+export const SettingsIcon = Settings;
+export const HomeIcon = Home;
+export const GlobeIcon = Globe;
+export const MessageCircleIcon = MessageCircle;
+export const ArrowRightIcon = ArrowRight;
+export const ActivityIcon = Activity;
+export const ShieldIcon = Shield;
 
 // Action Icons
-export {
-  Plus as PlusIcon,
-  Edit as EditIcon,
-  Trash2 as DeleteIcon,
-  Search as SearchIcon,
-  Filter as FilterIcon,
-  Download as DownloadIcon,
-  Upload as UploadIcon,
-  RefreshCw as RefreshIcon,
-  Save as SaveIcon,
-  X as CloseIcon,
-  Check as CheckIcon,
-  CheckCircle as CheckCircleIcon,
-  AlertCircle as AlertIcon,
-  AlertCircle as AlertCircleIcon,
-  Info as InfoIcon,
-  ChevronDown as ChevronDownIcon,
-  ChevronUp as ChevronUpIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  MoreVertical as MoreIcon,
-  Eye as ViewIcon,
-  Eye as EyeIcon,
-  EyeOff as HideIcon,
-  EyeOff as EyeOffIcon,
-  Copy as CopyIcon,
-  ExternalLink as ExternalLinkIcon,
-  Send as SendIcon,
-  Loader2 as Loader2Icon,
-} from 'lucide-react';
+export const PlusIcon = Plus;
+export const EditIcon = Edit;
+export const DeleteIcon = Trash2;
+export const SearchIcon = Search;
+export const FilterIcon = Filter;
+export const DownloadIcon = Download;
+export const UploadIcon = Upload;
+export const RefreshIcon = RefreshCw;
+export const SaveIcon = Save;
+export const CloseIcon = X;
+export const CheckIcon = Check;
+export const CheckCircleIcon = CheckCircle;
+export const AlertIcon = AlertCircle;
+export const AlertCircleIcon = AlertCircle;
+export const InfoIcon = Info;
+export const ChevronDownIcon = ChevronDown;
+export const ChevronUpIcon = ChevronUp;
+export const ChevronLeftIcon = ChevronLeft;
+export const ChevronRightIcon = ChevronRight;
+export const MoreIcon = MoreVertical;
+export const ViewIcon = Eye;
+export const EyeIcon = Eye;
+export const HideIcon = EyeOff;
+export const EyeOffIcon = EyeOff;
+export const CopyIcon = Copy;
+export const ExternalLinkIcon = ExternalLink;
+export const SendIcon = Send;
+export const Loader2Icon = Loader2;
 
 // Status Icons
-export {
-  CheckCircle as SuccessIcon,
-  XCircle as ErrorIcon,
-  AlertTriangle as WarningIcon,
-  Clock as PendingIcon,
-} from 'lucide-react';
+export const SuccessIcon = CheckCircle;
+export const ErrorIcon = XCircle;
+export const WarningIcon = AlertTriangle;
+export const PendingIcon = Clock;
 
 // UI Icons
-export {
-  Sun as LightModeIcon,
-  Sun as SunIcon,
-  Moon as DarkModeIcon,
-  Moon as MoonIcon,
-  Menu as MenuIcon,
-  LogOut as LogoutIcon,
-  LogOut as LogOutIcon,
-  User as UserIcon,
-  Bell as NotificationIcon,
-  Bell as BellIcon,
-  HelpCircle as HelpIcon,
-  X as XIcon,
-  MoreVertical as MoreVerticalIcon,
-  ChevronsLeft as ChevronsLeftIcon,
-  ChevronsRight as ChevronsRightIcon,
-} from 'lucide-react';
+export const LightModeIcon = Sun;
+export const SunIcon = Sun;
+export const DarkModeIcon = Moon;
+export const MoonIcon = Moon;
+export const MenuIcon = Menu;
+export const LogoutIcon = LogOut;
+export const LogOutIcon = LogOut;
+export const UserIcon = User;
+export const NotificationIcon = Bell;
+export const BellIcon = Bell;
+export const HelpIcon = HelpCircle;
+export const XIcon = X;
+export const MoreVerticalIcon = MoreVertical;
+export const ChevronsLeftIcon = ChevronsLeft;
+export const ChevronsRightIcon = ChevronsRight;
 
 // Content Icons
-export {
-  Image as ImageIcon,
-  Video as VideoIcon,
-  Music as MusicIcon,
-  File as FileIcon,
-  FileText as FileTextIcon,
-  Folder as FolderIcon,
-  Tag as TagIcon,
-  Calendar as CalendarIcon,
-  Type as TypeIcon,
-  MessageSquare as MessageSquareIcon,
-  Heart as HeartIcon,
-  Star as StarIcon,
-  List as ListIcon,
-  BookOpen as BookOpen,
-} from 'lucide-react';
+export const ImageIcon = Image;
+export const VideoIcon = Video;
+export const MusicIcon = Music;
+export const FileIcon = File;
+export const FileTextIcon = FileText;
+export const FolderIcon = Folder;
+export const TagIcon = Tag;
+export const CalendarIcon = Calendar;
+export const TypeIcon = Type;
+export const MessageSquareIcon = MessageSquare;
+export const HeartIcon = Heart;
+export const StarIcon = Star;
+export const ListIcon = List;
+export const BookOpenIcon = BookOpen;
+export { BookOpen };
 
 // Table Icons
-export {
-  ArrowUp as SortAscIcon,
-  ArrowDown as SortDescIcon,
-  ChevronsUpDown as SortIcon,
-} from 'lucide-react';
+export const SortAscIcon = ArrowUp;
+export const SortDescIcon = ArrowDown;
+export const SortIcon = ChevronsUpDown;

@@ -500,7 +500,7 @@ const ContentManager: React.FC = () => {
           key={selectedDraft?.id || 'new'}
           onSuccess={handleSuccess} 
           onCancel={handleCancel} 
-          initialDraft={selectedDraft} 
+          initialData={selectedDraft} 
         />
       </div>
     );

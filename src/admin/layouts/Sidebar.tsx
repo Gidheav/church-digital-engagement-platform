@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             return (
               <div key={group.label} className="space-y-0.5">
                 {group.label !== 'Overview' && (
-                  <p className="px-3 text-xs font-bold text-slate-soft uppercase tracking-widest mb-1.5">
+                  <p className="px-3 font-bold text-slate-soft uppercase tracking-widest mb-1.5">
                     {group.label}
                   </p>
                 )}
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <button
                       key={item.id}
                       onClick={() => handleNavigation(item.path)}
-                      className={`flex items-center gap-3 w-full rounded px-3 py-2 text-xs font-medium transition-all text-left ${
+                      className={`flex items-center gap-3 w-full rounded px-3 py-2 font-medium transition-all text-left ${
                         active
                           ? 'bg-primary text-white font-semibold'
                           : 'text-slate-soft hover:bg-slate-50 hover:text-primary'
@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex gap-2">
             <button
               onClick={() => navigate('/')}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded border border-border-light bg-white px-2 py-1.5 text-xs font-semibold text-slate-soft hover:border-primary hover:text-primary transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded border border-border-light bg-white px-2 py-1.5 font-semibold text-slate-soft hover:border-primary hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined text-sm">public</span>
               <span>Public</span>
@@ -168,10 +168,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               {getUserInitials()}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-slate-deep truncate">
+              <div className="font-bold text-slate-deep truncate">
                 {user?.firstName} {user?.lastName}
               </div>
-              <div className="text-xs text-slate-soft uppercase font-semibold">{user?.role}</div>
+              <div className="text-slate-soft uppercase font-semibold">{user?.role}</div>
             </div>
             <button
               onClick={handleLogout}

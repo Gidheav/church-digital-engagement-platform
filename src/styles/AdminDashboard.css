@@ -10,7 +10,7 @@
 }
 
 /* Sidebar */
-.admin-sidebar {
+ .admin-sidebar {
   width: 260px;
   background: linear-gradient(180deg, #87CEEB 0%, #5FB3D9 100%);
   color: white;
@@ -21,11 +21,13 @@
   height: 100vh;
   left: 0;
   top: 0;
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
-.sidebar-header {
+ .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 .sidebar-header h1 {
@@ -43,10 +45,11 @@
   display: inline-block;
 }
 
-.sidebar-nav {
+ .sidebar-nav {
   flex: 1;
   padding: 20px 0;
   overflow-y: auto;
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 .nav-item {

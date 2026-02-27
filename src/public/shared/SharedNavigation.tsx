@@ -78,8 +78,8 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
         <div className={`h-20 flex items-center justify-between ${fullWidth ? 'w-full px-8' : 'max-w-[1200px] mx-auto px-6'}`}>
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 text-text-main" aria-label="Serene Sanctuary Home">
-          <span className="material-symbols-outlined text-3xl text-primary" aria-hidden="true">spa</span>
-          <span className="font-display font-semibold text-2xl tracking-tight text-text-main">Serene Sanctuary</span>
+          <span className="material-symbols-outlined text-primary" aria-hidden="true">spa</span>
+          <span className="font-display font-semibold tracking-tight text-text-main">Serene Sanctuary</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -91,7 +91,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
             onMouseLeave={() => setShowMegaMenu(false)}
           >
             <button 
-              className={`flex items-center gap-1 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 font-medium transition-colors ${
                 isActive('library') ? 'text-primary' : 'text-text-main hover:text-primary'
               }`}
               aria-expanded={showMegaMenu}
@@ -113,7 +113,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           {/* Navigation Links */}
           <Link 
             to="/library/series" 
-            className={`text-sm font-medium transition-colors ${
+            className={`font-medium transition-colors ${
               isActive('series') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -121,7 +121,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           </Link>
           <Link 
             to="/practices" 
-            className={`text-sm font-medium transition-colors ${
+            className={`font-medium transition-colors ${
               isActive('practices') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -129,7 +129,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           </Link>
           <Link 
             to="/connect" 
-            className={`text-sm font-medium transition-colors ${
+            className={`font-medium transition-colors ${
               isActive('connect') ? 'text-primary' : 'text-text-main hover:text-primary'
             }`}
           >
@@ -142,7 +142,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           {!isAuthenticated ? (
             <button 
               onClick={() => navigate('/login')}
-              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-sm font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
+              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
               aria-label="Login to your account"
             >
               Login
@@ -150,7 +150,7 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           ) : (
             <button 
               onClick={() => navigate('/member')}
-              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary text-sm font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
+              className="hidden md:flex items-center justify-center px-6 h-10 rounded-btn border border-primary/20 text-primary font-bold tracking-wide hover:bg-primary hover:text-white transition-all duration-300"
               aria-label="Go to member portal"
             >
               Portal

@@ -116,6 +116,7 @@ const AppRouter: React.FC = () => {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="content" element={<ContentManager />} />
           <Route path="series" element={<SeriesManager />} />
+          <Route path="series/new" element={<SeriesDetailManager />} />
           <Route path="series/:id" element={<SeriesDetailManager />} />
           <Route path="drafts" element={<DraftsManager />} />
           <Route path="podcasting" element={<AdminPlaceholder title="Podcasting" icon="podcasts" description="Manage and publish podcast episodes directly from here." />} />

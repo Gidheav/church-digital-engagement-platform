@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import seriesService, { Series } from '../services/series.service';
-import SeriesCreate from './SeriesCreate';
 
 // Dynamically fetch and sum views for a series
 const SeriesViewsCell: React.FC<{ seriesId: string }> = ({ seriesId }) => {
@@ -31,8 +30,6 @@ const SeriesManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchSeries = useCallback(async () => {
@@ -52,17 +49,10 @@ const SeriesManager: React.FC = () => {
     fetchSeries();
   }, [fetchSeries]);
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
-    setDeletingId(id);
-    try {
-      await seriesService.deleteSeries(id);
-      setSeries(prev => prev.filter(s => s.id !== id));
-    } catch (err: any) {
-      alert('Failed to delete: ' + (err.message || 'Unknown error'));
-    } finally {
-      setDeletingId(null);
-    }
+
+
+  const handleCreateNew = () => {
+    navigate('/admin/series/new');
   };
 
   const filtered = series.filter(s =>
@@ -91,17 +81,6 @@ const SeriesManager: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Create modal */}
-      {showCreate && (
-        <SeriesCreate
-          onSuccess={() => {
-            setShowCreate(false);
-            fetchSeries();
-          }}
-          onCancel={() => setShowCreate(false)}
-        />
-      )}
-
       {/* Page Header */}
       <div className="bg-white border-b border-slate-200 px-8 py-5 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
@@ -114,7 +93,7 @@ const SeriesManager: React.FC = () => {
             </p>
           </div>
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={handleCreateNew}
             className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-sm">add</span>
@@ -179,7 +158,7 @@ const SeriesManager: React.FC = () => {
               </p>
               {!searchTerm && (
                 <button
-                  onClick={() => setShowCreate(true)}
+                  onClick={handleCreateNew}
                   className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
                 >
                   Create your first series
@@ -247,16 +226,6 @@ const SeriesManager: React.FC = () => {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(s.id, s.title); }}
-                      disabled={deletingId === s.id}
-                      className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
-                      title="Delete series"
-                    >
-                      <span className="material-symbols-outlined">
-                        {deletingId === s.id ? 'hourglass_empty' : 'delete'}
-                      </span>
-                    </button>
                     <span className="material-symbols-outlined text-slate-300 text-lg">chevron_right</span>
                   </div>
                 </div>

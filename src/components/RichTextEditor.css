@@ -204,6 +204,9 @@
   overflow-y: auto;
   padding: var(--space-5) var(--space-6);
   color: var(--text-primary) !important;
+  direction: ltr;
+  unicode-bidi: normal;
+  text-align: left;
 }
 
 .rich-text-editor-wrapper.fullscreen .ql-editor {

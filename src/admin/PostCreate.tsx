@@ -1,1147 +1,275 @@
-/**
- * PostCreate Component - Desktop-Optimized Edition
- * Professional 2-column form with collapsible right sidebar
- * Desktop-first responsive design
- * WITH AUTO-SAVE FUNCTIONALITY
- */
-
-import React, { useState, useEffect } from 'react';
-import postService, { PostCreateData } from '../services/post.service';
-import contentTypeService, { ContentType } from '../services/contentType.service';
-import seriesService, { Series } from '../services/series.service';
-import RichTextEditor from '../components/RichTextEditor';
-import { useAutoSave } from '../hooks/useAutoSave';
-import { useAuth } from '../auth/AuthContext';
-import draftService, { Draft } from '../services/draft.service';
 import { 
-  XIcon, 
-  TypeIcon, 
-  ImageIcon, 
-  MessageSquareIcon,
-  HeartIcon,
-  SendIcon,
-  SaveIcon,
-  AlertCircleIcon,
-  FolderIcon,
-  PlusIcon,
-  ChevronDownIcon,
-} from './components/Icons';
-import './styles/PostForm.desktop.css';
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight, 
+  AlignJustify, 
+  PlusCircle,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  List,
+  ListOrdered,
+  Quote,
+  Code,
+  Undo,
+  Redo,
+  Heading,
+  ChevronDown,
+  Link,
+  Image,
+  Table,
+  SeparatorHorizontal,
+  BookOpen
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+// SacredEditor.tsx
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import postService from '../services/post.service';
+import draftService from '../services/draft.service';
+import seriesService from '../services/series.service';
 import ImageUploadInput from './components/ImageUploadInput';
 
-interface PostCreateProps {
-  onSuccess: () => void;
-  onCancel: () => void;
-  initialDraft?: Draft | null;
+interface PostMetadata {
+  title: string;
+  contentType: string;
+  series: string;
+  tags: string[];
+  featuredImage: string | null;
+  videoUrl: string;
+  allowComments: boolean;
+  allowReactions: boolean;
+  featuredOnHomepage: boolean;
 }
 
-const PostCreate: React.FC<PostCreateProps> = ({ onSuccess, onCancel, initialDraft = null }) => {
-  // Immediate diagnostic log when component renders
-  console.log('[MOUNT] PostCreate component rendered at:', new Date().toISOString());
-  console.log('[MOUNT] initialDraft prop:', initialDraft);
-  console.log('[MOUNT] initialDraft ID:', initialDraft?.id);
-  console.log('[MOUNT] initialDraft.draft_data:', initialDraft?.draft_data);
-  
-  // Get user from auth context
-  const { user } = useAuth();
-  
-  const [contentTypes, setContentTypes] = useState<ContentType[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
-  // Start sidebar closed on mobile, open on desktop
-  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth > 1024 : true);
-  const [formData, setFormData] = useState<PostCreateData>({
-    title: '',
-    content: '',
-    content_type: '',
-    status: 'DRAFT',
-    comments_enabled: true,
-    reactions_enabled: true,
-    featured_image: '',
-    video_url: '',
-    audio_url: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  // Series state
-  const [availableSeries, setAvailableSeries] = useState<Series[]>([]);
-  const [isPartOfSeries, setIsPartOfSeries] = useState(false);
-  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('');
-  const [seriesOrder, setSeriesOrder] = useState<number>(1);
-  const [showQuickCreateSeries, setShowQuickCreateSeries] = useState(false);
-  const [seriesContentTypeId, setSeriesContentTypeId] = useState<string>('');
-  const [previousContentType, setPreviousContentType] = useState<string>('');
-  const initialDraftId = initialDraft?.id || null;
-  
-  // Auto-save state - use user ID from auth context
-  const [userId, setUserId] = useState<string>('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [draftCreated, setDraftCreated] = useState(false);
-  const [isCreatingDraft, setIsCreatingDraft] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+interface SacredEditorProps {
+  mode?: 'create' | 'edit';
+  postId?: string;
+  draftId?: string;
+  initialData?: any;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
 
-  // Get user ID from auth context
-  useEffect(() => {
-    console.log('[AUTH] Getting user ID from auth context');
-    if (user && user.id) {
-      console.log('[AUTH] Successfully got user_id:', user.id);
-      setUserId(user.id);
-    } else {
-      console.log('[AUTH] No user in auth context');
-      setUserId('');
-    }
-  }, [user]);
+// Formatting Toolbar Button Component
+const ToolbarButton: React.FC<{
+  icon: LucideIcon;
+  active?: boolean;
+  onClick: () => void;
+  title: string;
+}> = ({ icon: Icon, active, onClick, title }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className={`p-2 rounded-lg transition-all ${
+      active 
+        ? 'bg-primary text-white' 
+        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
+    }`}
+  >
+    <Icon className="w-5 h-5" />
+  </button>
+);
 
-  // Initialize auto-save hook
-  const {
-    status: autoSaveStatus,
-    lastSaved,
-    saveDraft,
-    forceSave,
-    deleteDraft,
-    currentDraftId,
-    setCurrentDraftId,
-  } = useAutoSave({
-    userId,
-    postId: null, // null for new post
-    enabled: !!userId, // Enable when user is authenticated
-    debounceDelay: 10000, // 10 seconds per specification
-    initialDraftId,
-    onSaveSuccess: (draft) => {
-      console.log('Draft saved successfully:', draft.id);
-      setLastSavedTime(new Date());
-    },
-    onSaveError: (err) => {
-      console.error('Draft save error:', err);
-    },
-  });
+
+// Text Color Picker
+const TextColorPicker: React.FC<{
+  value: string;
+  onChange: (color: string) => void;
+}> = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log('📝 [LOAD DRAFT] useEffect triggered');
-    console.log('📝 [LOAD DRAFT] initialDraft:', initialDraft);
-    console.log('📝 [LOAD DRAFT] initialDraft?.draft_data:', initialDraft?.draft_data);
-    
-    if (!initialDraft || !initialDraft.draft_data) {
-      console.log('📝 [LOAD DRAFT] EARLY RETURN: No initial draft or draft data');
-      return;
-    }
-
-    const draftData = initialDraft.draft_data;
-    console.log('📝 [LOAD DRAFT] Loading draft data:', draftData);
-    console.log('📝 [LOAD DRAFT] Title:', draftData.title);
-    console.log('📝 [LOAD DRAFT] Content length:', draftData.content?.length || 0);
-    console.log('📝 [LOAD DRAFT] Content preview:', draftData.content?.substring(0, 100));
-    console.log('📝 [LOAD DRAFT] Content type from draft object:', initialDraft.content_type);
-    
-    const loadedFormData = {
-      title: draftData.title || '',
-      content: draftData.content || '',
-      content_type: initialDraft.content_type || '', // FIX: content_type is at top level, not in draft_data
-      status: draftData.status || 'DRAFT',
-      comments_enabled: draftData.comments_enabled ?? true,
-      reactions_enabled: draftData.reactions_enabled ?? true,
-      featured_image: draftData.featured_image || '',
-      video_url: draftData.video_url || '',
-      audio_url: draftData.audio_url || '',
-    };
-    
-    console.log('📝 [LOAD DRAFT] Setting formData:', loadedFormData);
-    setFormData(loadedFormData);
-
-    if (draftData.series) {
-      console.log('📝 [LOAD DRAFT] Setting series:', draftData.series);
-      setIsPartOfSeries(true);
-      setSelectedSeriesId(draftData.series);
-      setSeriesOrder(draftData.series_order || 1);
-    }
-    
-    console.log('📝 [LOAD DRAFT] Draft loading complete!');
-    
-    // Mark draft as created since we're loading an existing draft
-    if (initialDraft?.id) {
-      console.log('📝 [LOAD DRAFT] Setting draftCreated to true for initialDraft:', initialDraft.id);
-      setDraftCreated(true);
-    }
-  }, [initialDraft]);
-
-  useEffect(() => {
-    const loadContentTypes = async () => {
-      try {
-        const types = await contentTypeService.getEnabled();
-        setContentTypes(types);
-        
-        // Find and store Series content type ID
-        const seriesType = types.find(t => t.slug === 'series');
-        if (seriesType) {
-          setSeriesContentTypeId(seriesType.id);
-        }
-        
-        if (types.length > 0 && !formData.content_type) {
-          setFormData(prev => ({ ...prev, content_type: types[0].id }));
-          setPreviousContentType(types[0].id);
-        }
-      } catch (err) {
-        console.error('Failed to load content types:', err);
-      } finally {
-        setLoadingTypes(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
     };
-    
-    const loadSeries = async () => {
-      try {
-        const series = await seriesService.getAllSeries();
-        setAvailableSeries(Array.isArray(series) ? series : []);
-      } catch (err) {
-        console.error('Failed to load series:', err);
-      }
-    };
-    
-    loadContentTypes();
-    loadSeries();
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Clean up old localStorage backups on mount - NO recovery prompt
-  // If user wants to recover drafts, they should use the Drafts tab
-  useEffect(() => {
-    const cleanupOldBackups = () => {
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('draft_backup_'));
-      if (keys.length > 0) {
-        console.log(`🧹 [CLEANUP] Removing ${keys.length} old localStorage backups`);
-        keys.forEach(k => localStorage.removeItem(k));
-      }
-    };
-    cleanupOldBackups();
-  }, []);
-
-  // Handle series toggle - automatically set/restore content type
-  useEffect(() => {
-    if (isPartOfSeries && seriesContentTypeId) {
-      // Store current content type before switching
-      if (!previousContentType && formData.content_type) {
-        setPreviousContentType(formData.content_type);
-      }
-      // Set content type to Series
-      setFormData(prev => ({ ...prev, content_type: seriesContentTypeId }));
-    } else if (!isPartOfSeries && previousContentType) {
-      // Restore previous content type
-      setFormData(prev => ({ ...prev, content_type: previousContentType }));
-    }
-  }, [isPartOfSeries]);
-
-  // Tooltip positioning effect
-  useEffect(() => {
-    const handleTooltipPosition = () => {
-      const triggers = document.querySelectorAll('.tooltip-trigger');
-      triggers.forEach((trigger) => {
-        const rect = trigger.getBoundingClientRect();
-        const tooltip = trigger.querySelector('.tooltip-content') as HTMLElement;
-        if (tooltip) {
-          tooltip.style.setProperty('top', `${rect.top}px`);
-          tooltip.style.setProperty('left', `${rect.left + rect.width / 2}px`);
-        }
-      });
-    };
-
-    const handleMouseEnter = (e: Event) => {
-      const trigger = (e.currentTarget as HTMLElement);
-      const rect = trigger.getBoundingClientRect();
-      const tooltip = trigger.querySelector('.tooltip-content') as HTMLElement;
-      if (tooltip) {
-        tooltip.style.setProperty('top', `${rect.top}px`);
-        tooltip.style.setProperty('left', `${rect.left + rect.width / 2}px`);
-      }
-    };
-
-    // Position on mount and scroll
-    handleTooltipPosition();
-    window.addEventListener('scroll', handleTooltipPosition, true);
-    window.addEventListener('resize', handleTooltipPosition);
-
-    // Add hover listeners to all tooltip triggers
-    const triggers = document.querySelectorAll('.tooltip-trigger');
-    triggers.forEach(trigger => {
-      trigger.addEventListener('mouseenter', handleMouseEnter);
-    });
-
-    return () => {
-      window.removeEventListener('scroll', handleTooltipPosition, true);
-      window.removeEventListener('resize', handleTooltipPosition);
-      triggers.forEach(trigger => {
-        trigger.removeEventListener('mouseenter', handleMouseEnter);
-      });
-    };
-  }, []);
-
-  // FIX #2: Auto-save when form data changes - NO validation gate
-  // WITH DIAGNOSTIC LOGGING
-  useEffect(() => {
-    console.log('🔵 [AUTO-SAVE] Form changed');
-    console.log('   currentDraftId:', currentDraftId);
-    console.log('   auto-save enabled:', !!currentDraftId);
-    
-    if (!currentDraftId) {
-      console.log('⏸️  [AUTO-SAVE] Waiting for draft to be created...');
-      return;
-    }
-    
-    console.log('💾 [AUTO-SAVE] Scheduling debounced auto-save (10 seconds)');
-    console.log('💾 [AUTO-SAVE] formData.content length:', formData.content?.length || 0);
-    console.log('💾 [AUTO-SAVE] formData.content preview:', formData.content?.substring(0, 100));
-    
-    const draftData = {
-      title: formData.title || 'Untitled Draft',
-      content: formData.content || '',
-      status: formData.status,
-      comments_enabled: formData.comments_enabled,
-      reactions_enabled: formData.reactions_enabled,
-      featured_image: formData.featured_image,
-      video_url: formData.video_url,
-      audio_url: formData.audio_url,
-      series: isPartOfSeries ? selectedSeriesId : null,
-      series_order: isPartOfSeries ? seriesOrder : undefined,
-    };
-
-    console.log('💾 [AUTO-SAVE] draftData.content length:', draftData.content?.length || 0);
-    console.log('💾 [AUTO-SAVE] draftData.content preview:', draftData.content?.substring(0, 100));
-    console.log('💾 [AUTO-SAVE] Will save:', {title: draftData.title, contentLength: draftData.content.length});
-    saveDraft(draftData, formData.content_type || null);
-  }, [formData, isPartOfSeries, selectedSeriesId, seriesOrder, saveDraft, currentDraftId]);
-
-  // FIX #3: Use sendBeacon() for page unload - CRITICAL FIX
-  // WITH DIAGNOSTIC LOGGING
-  // Updated: Only warn if there are unsaved changes (last save > 15 seconds ago or currently saving)
-  useEffect(() => {
-    const handleBeforeUnload = (_e: BeforeUnloadEvent) => {
-      console.log('⚠️  [UNLOAD] beforeunload event triggered');
-      console.log('   currentDraftId:', currentDraftId);
-      console.log('   autoSaveStatus:', autoSaveStatus);
-      console.log('   lastSavedTime:', lastSavedTime);
-      
-      if (!currentDraftId) {
-        console.log('⏭️  [UNLOAD] No draft ID, nothing to save');
-        return;
-      }
-      
-      // Check if we have recently saved changes
-      const now = Date.now();
-      const timeSinceLastSave = lastSavedTime ? now - lastSavedTime.getTime() : Infinity;
-      const hasRecentlySaved = timeSinceLastSave < 15000; // within last 15 seconds
-      const isCurrentlySaving = autoSaveStatus === 'saving';
-      
-      console.log('   Time since last save:', timeSinceLastSave, 'ms');
-      console.log('   Has recently saved:', hasRecentlySaved);
-      console.log('   Is currently saving:', isCurrentlySaving);
-      
-      // Only prompt if there might be unsaved changes
-      if (hasRecentlySaved || !isCurrentlySaving) {
-        console.log('✅ [UNLOAD] Auto-save is working, no warning needed');
-        return;
-      }
-      
-      // Send final save attempt via sendBeacon
-      console.log('📤 [UNLOAD] Sending final save via sendBeacon()');
-      
-      const draftData = {
-        title: formData.title || 'Untitled Draft',
-        content: formData.content || '',
-        status: formData.status,
-        comments_enabled: formData.comments_enabled,
-        reactions_enabled: formData.reactions_enabled,
-        featured_image: formData.featured_image,
-        video_url: formData.video_url,
-        audio_url: formData.audio_url,
-      };
-      
-      try {
-        const payload = JSON.stringify({
-          draft_data: draftData,
-          content_type: formData.content_type || null
-        });
-        
-        console.log('   Payload size:', payload.length, 'bytes');
-        
-        const blob = new Blob([payload], { type: 'application/json' });
-        const beaconResponse = navigator.sendBeacon(
-          `http://localhost:8000/api/v1/admin/content/drafts/${currentDraftId}/`,
-          blob
-        );
-        
-        console.log('✅ [UNLOAD] sendBeacon response:', beaconResponse);
-      } catch (err) {
-        console.error('❌ [UNLOAD] sendBeacon failed:', err);
-      }
-      
-      // Also save to localStorage as backup
-      console.log('💾 [UNLOAD] Also saving to localStorage backup');
-      saveToLocalStorage({
-        id: currentDraftId,
-        draft_data: draftData,
-        timestamp: Date.now()
-      });
-      
-      // No confirmation prompt - auto-save handles everything
-    };
-
-    console.log('📌 [UNLOAD] Registering beforeunload handler');
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      console.log('🗑️  [UNLOAD] Cleaning up beforeunload handler');
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [currentDraftId, formData, autoSaveStatus, lastSavedTime]);
-
-  // FIX #4: Add localStorage fallback
-  const saveToLocalStorage = (data: any) => {
-    try {
-      const key = `draft_backup_${currentDraftId || 'new'}_${Date.now()}`;
-      localStorage.setItem(key, JSON.stringify({
-        data,
-        timestamp: Date.now(),
-        userId
-      }));
-      
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('draft_backup_'));
-      if (keys.length > 10) {
-        keys.sort().slice(0, keys.length - 10).forEach(k => localStorage.removeItem(k));
-      }
-      
-      console.log('💾 [AUTO-SAVE] Saved to localStorage');
-    } catch (e) {
-      console.error('[AUTO-SAVE] localStorage error:', e);
-    }
-  };
-
-  // Create the initial draft on first user interaction (keystroke)
-  const createInitialDraft = async (overrides?: Partial<PostCreateData>) => {
-    // Don't create if already creating, already created, or draft already exists
-    if (isCreatingDraft || draftCreated || currentDraftId || !userId) {
-      console.log('[FIRST-KEYSTROKE] SKIPPED - already creating or draft exists');
-      return;
-    }
-
-    setIsCreatingDraft(true);
-    console.log('[FIRST-KEYSTROKE] Creating initial draft on first user input');
-    console.log('[FIRST-KEYSTROKE] formData:', formData);
-    console.log('[FIRST-KEYSTROKE] overrides:', overrides);
-
-    try {
-      const draftState = { ...formData, ...overrides };
-      console.log('[FIRST-KEYSTROKE] draftState after merge:', draftState);
-      console.log('[FIRST-KEYSTROKE] draftState.content length:', draftState.content?.length || 0);
-      console.log('[FIRST-KEYSTROKE] draftState.content preview:', draftState.content?.substring(0, 100));
-      
-      const draftPayload = {
-        draft_data: {
-          title: draftState.title || 'Untitled Draft',
-          content: draftState.content || '',
-          status: draftState.status || 'DRAFT',
-          comments_enabled: draftState.comments_enabled ?? true,
-          reactions_enabled: draftState.reactions_enabled ?? true,
-          featured_image: draftState.featured_image || '',
-          video_url: draftState.video_url || '',
-          audio_url: draftState.audio_url || '',
-        },
-        content_type: draftState.content_type || null,
-        post: null
-      };
-      
-      console.log('[FIRST-KEYSTROKE] draftPayload.draft_data.content length:', draftPayload.draft_data.content?.length || 0);
-      console.log('[FIRST-KEYSTROKE] draftPayload.draft_data.content preview:', draftPayload.draft_data.content?.substring(0, 100));
-
-      const newDraft = await draftService.createDraft(draftPayload);
-      console.log('[FIRST-KEYSTROKE] Draft created successfully:', newDraft.id);
-      
-      setCurrentDraftId(newDraft.id);
-      setDraftCreated(true);
-      setLastSavedTime(new Date());
-    } catch (error: any) {
-      console.error('[FIRST-KEYSTROKE] Failed to create initial draft:', error);
-      setError('Failed to create draft. Your changes may not be saved.');
-    } finally {
-      setIsCreatingDraft(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      // Create draft on first interaction if needed
-      if (!currentDraftId && !isCreatingDraft && !initialDraftId) {
-        createInitialDraft({ [name]: checked } as Partial<PostCreateData>);
-      }
-      setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else {
-      // Create draft on first interaction if needed
-      if (!currentDraftId && !isCreatingDraft && !initialDraftId) {
-        createInitialDraft({ [name]: value } as Partial<PostCreateData>);
-      }
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // Handle rich text editor content change
-  const handleContentChange = (content: string) => {
-    console.log('📝 [CONTENT-CHANGE] handleContentChange called');
-    console.log('📝 [CONTENT-CHANGE] Content length:', content?.length || 0);
-    console.log('📝 [CONTENT-CHANGE] Content preview:', content?.substring(0, 100));
-    console.log('📝 [CONTENT-CHANGE] currentDraftId:', currentDraftId);
-    console.log('📝 [CONTENT-CHANGE] isCreatingDraft:', isCreatingDraft);
-    console.log('📝 [CONTENT-CHANGE] initialDraftId:', initialDraftId);
-    
-    // Create draft on first interaction if needed
-    if (!currentDraftId && !isCreatingDraft && !initialDraftId) {
-      console.log('📝 [CONTENT-CHANGE] Triggering createInitialDraft with content');
-      createInitialDraft({ content });
-    } else {
-      console.log('📝 [CONTENT-CHANGE] NOT creating draft (already exists or creating)');
-    }
-    
-    console.log('📝 [CONTENT-CHANGE] Updating formData with content');
-    setFormData((prev) => {
-      console.log('📝 [CONTENT-CHANGE] Previous formData.content length:', prev.content?.length || 0);
-      console.log('📝 [CONTENT-CHANGE] New content length:', content?.length || 0);
-      return { ...prev, content };
-    });
-  };
-
-  // Handle image upload for the rich text editor
-  const handleImageUpload = async (file: File): Promise<string> => {
-    try {
-      // TODO: Implement actual image upload to your backend
-      // For now, return a placeholder or convert to base64
-      
-      // Example implementation (replace with actual API call):
-      // const formData = new FormData();
-      // formData.append('image', file);
-      // const response = await axios.post('/api/v1/upload/image', formData);
-      // return response.data.url;
-
-      // Temporary base64 conversion (not recommended for production)
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-      });
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      throw error;
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.content.trim()) {
-      setError('Title and content are required');
-      return;
-    }
-
-    if (!formData.content_type) {
-      setError('Please select a content type');
-      return;
-    }
-
-    if (formData.status === 'PUBLISHED') {
-      formData.published_at = new Date().toISOString();
-    }
-
-    // Add series data if selected
-    const postData: any = { ...formData };
-    if (isPartOfSeries && selectedSeriesId) {
-      postData.series = selectedSeriesId;
-      postData.series_order = seriesOrder;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      if (initialDraft?.post) {
-        const draftData = {
-          ...postData,
-          status: 'DRAFT',
-        };
-        await forceSave(draftData, formData.content_type || null);
-        await draftService.publishDraft(initialDraft.id);
-      } else {
-        await postService.createPost(postData);
-        // Delete draft after successful creation
-        await deleteDraft();
-      }
-      onSuccess();
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.response?.data?.detail || 'Failed to create post';
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handlePublish = async () => {
-    if (!formData.title.trim() || !formData.content.trim()) {
-      setError('Title and content are required');
-      return;
-    }
-
-    if (!formData.content_type) {
-      setError('Please select a content type');
-      return;
-    }
-
-    const postData: any = { 
-      ...formData, 
-      status: 'PUBLISHED',
-      published_at: new Date().toISOString()
-    };
-    
-    // Add series data if selected
-    if (isPartOfSeries && selectedSeriesId) {
-      postData.series = selectedSeriesId;
-      postData.series_order = seriesOrder;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      if (initialDraft?.post) {
-        const draftData = {
-          ...postData,
-          status: 'PUBLISHED',
-          published_at: new Date().toISOString(),
-        };
-        await forceSave(draftData, formData.content_type || null);
-        await draftService.publishDraft(initialDraft.id);
-      } else {
-        await postService.createPost(postData);
-        // Delete draft after successful publish
-        await deleteDraft();
-      }
-      onSuccess();
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.response?.data?.detail || 'Failed to publish post';
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleQuickCreateSeries = async (title: string, visibility: string) => {
-    try {
-      const newSeries = await seriesService.createSeries({ title, visibility } as any);
-      setAvailableSeries(prev => [...prev, newSeries]);
-      setSelectedSeriesId(newSeries.id);
-      setShowQuickCreateSeries(false);
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create series');
-    }
-  };
-  
-  // Manual save draft handler
-  const handleManualSaveDraft = async () => {
-    const hasContent = formData.title.trim().length > 0 || formData.content.trim().length >= 5;
-    
-    if (!hasContent) {
-      alert('Please type at least 5 characters to save a draft');
-      return;
-    }
-    
-    try {
-      const draftData = {
-        title: formData.title || 'Untitled Draft',
-        content: formData.content,
-        status: formData.status,
-        comments_enabled: formData.comments_enabled,
-        reactions_enabled: formData.reactions_enabled,
-        featured_image: formData.featured_image,
-        video_url: formData.video_url,
-        audio_url: formData.audio_url,
-        series: isPartOfSeries ? selectedSeriesId : null,
-        series_order: isPartOfSeries ? seriesOrder : undefined,
-      };
-      
-      await forceSave(draftData, formData.content_type || null);
-      alert('✅ Draft saved successfully!');
-    } catch (err) {
-      console.error('Failed to save draft:', err);
-      alert('❌ Failed to save draft');
-    }
-  };
+  const colors = [
+    '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef',
+    '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff',
+    '#9900ff', '#ff00ff', '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#cfe2f3',
+    '#d9d2e9', '#ead1dc', '#ea9999', '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#9fc5e8',
+    '#b4a7d6', '#d5a6bd', '#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc',
+  ];
 
   return (
-    <div className="post-form-wrapper-desktop">
-      {/* Main Content Area */}
-      <div className="post-form-content-desktop">
-        {/* Left Column - Main Form */}
-        <div className="post-form-main-desktop">
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* Content */}
-            <div className="form-section-desktop">
-              <div className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MessageSquareIcon className="icon" />
-                  Content
-                </h3>
-                
-                {/* Save Status Indicator */}
-                <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {autoSaveStatus === 'saving' && (
-                    <span style={{ color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{
-                        animation: 'spin 1s linear infinite',
-                        borderRadius: '50%',
-                        height: '12px',
-                        width: '12px',
-                        border: '2px solid transparent',
-                        borderTop: '2px solid currentColor'
-                      }}></div>
-                      Saving...
-                    </span>
-                  )}
-                  
-                  {autoSaveStatus === 'saved' && lastSaved && (
-                    <span style={{ color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ height: '12px', width: '12px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      All changes saved (just now)
-                    </span>
-                  )}
-                  
-                  {autoSaveStatus === 'error' && (
-                    <span style={{ color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ height: '12px', width: '12px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      Save failed
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <RichTextEditor
-                key={initialDraftId || 'new-content'}
-                value={formData.content}
-                onChange={handleContentChange}
-                placeholder="Write your content here..."
-                disabled={loading}
-                minHeight={400}
-                onImageUpload={handleImageUpload}
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
+        title="Text color"
+      >
+        <div className="w-5 h-5 rounded-full border border-slate-300" style={{ backgroundColor: value }} />
+        <ChevronDown className="w-4 h-4" />
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 w-64 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50">
+          <div className="grid grid-cols-8 gap-1">
+            {colors.map(color => (
+              <button
+                key={color}
+                onClick={() => {
+                  onChange(color);
+                  setIsOpen(false);
+                }}
+                className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform"
+                style={{ backgroundColor: color }}
+                title={color}
               />
-            </div>
-        </form>
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="post-form-sidebar-desktop">
-          {/* Sidebar Header - Show on tablet/mobile */}
-          <div className="post-form-sidebar-header">
-            <h3>
-              <ChevronDownIcon className="icon" style={{ width: '16px', height: '16px' }} />
-              Additional Settings
-            </h3>
-            <button
-              className="post-form-sidebar-toggle"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle sidebar"
-              type="button"
-            >
-              <ChevronDownIcon style={{ width: '18px', height: '18px', transform: sidebarOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
-            </button>
+            ))}
           </div>
-
-          {/* Sidebar Content */}
-          <div className={`post-form-sidebar-content ${!sidebarOpen ? 'hidden' : ''}`}>
-            {/* Basic Information Section */}
-            <div className="sidebar-section">
-              <h4 className="sidebar-section-title">
-                <TypeIcon className="icon" />
-                Basic Information
-              </h4>
-
-              {error && (
-                <div style={{ padding: '12px', background: '#fee2e2', borderRadius: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#991b1b' }}>
-                  <AlertCircleIcon size={16} style={{ flexShrink: 0 }} />
-                  <span>{error.length > 60 ? error.substring(0, 57) + '...' : error}</span>
-                </div>
-              )}
-
-              <div className="sidebar-form-group">
-                <label htmlFor="title">
-                  Post Title <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter a compelling title"
-                  disabled={loading}
-                  className="form-input-desktop"
-                />
-              </div>
-
-              <div className="sidebar-form-group">
-                <label htmlFor="content_type">
-                  Content Type <span className="required">*</span>
-                  {isPartOfSeries && (
-                    <span className="tooltip-trigger">
-                      <span className="tooltip-icon">?</span>
-                      <span className="tooltip-content">Automatically set to 'Series' when post is part of a series</span>
-                    </span>
-                  )}
-                </label>
-                <select
-                  id="content_type"
-                  name="content_type"
-                  value={formData.content_type}
-                  onChange={handleChange}
-                  required
-                  disabled={loading || loadingTypes || isPartOfSeries}
-                  className="form-select-desktop"
-                >
-                  {loadingTypes && <option value="">Loading types...</option>}
-                  {!loadingTypes && contentTypes.length === 0 && <option value="">No types available</option>}
-                  {contentTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Media & Resources Section */}
-            <div className="sidebar-section">
-              <h4 className="sidebar-section-title">
-                <ImageIcon className="icon" />
-                Media & Resources
-              </h4>
-
-              <div className="sidebar-form-group">
-                <label>Featured Image</label>
-                <ImageUploadInput
-                  value={formData.featured_image || ''}
-                  onChange={(url) => setFormData(prev => ({ ...prev, featured_image: url }))}
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="sidebar-form-group">
-                <label htmlFor="video_url">
-                  Video URL
-                  <span className="tooltip-trigger">
-                    <span className="tooltip-icon">?</span>
-                    <span className="tooltip-content">YouTube or video link</span>
-                  </span>
-                </label>
-                <input
-                  type="url"
-                  id="video_url"
-                  name="video_url"
-                  value={formData.video_url}
-                  onChange={handleChange}
-                  placeholder="https://youtube.com/watch?v=..."
-                  disabled={loading}
-                  className="form-input-desktop"
-                />
-              </div>
-
-              <div className="sidebar-form-group">
-                <label htmlFor="audio_url">
-                  Audio URL
-                  <span className="tooltip-trigger">
-                    <span className="tooltip-icon">?</span>
-                    <span className="tooltip-content">Audio file or podcast link</span>
-                  </span>
-                </label>
-                <input
-                  type="url"
-                  id="audio_url"
-                  name="audio_url"
-                  value={formData.audio_url}
-                  onChange={handleChange}
-                  placeholder="https://example.com/audio.mp3"
-                  disabled={loading}
-                  className="form-input-desktop"
-                />
-              </div>
-            </div>
-
-            {/* Series Section */}
-            <div className="sidebar-section">
-              <h4 className="sidebar-section-title">
-                <FolderIcon className="icon" />
-                Series
-              </h4>
-
-              <label className="sidebar-checkbox">
-                <input
-                  type="checkbox"
-                  checked={isPartOfSeries}
-                  onChange={(e) => setIsPartOfSeries(e.target.checked)}
-                  disabled={loading}
-                />
-                <div className="sidebar-checkbox-label">
-                  <span className="sidebar-checkbox-text">Part of a series</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                    Group related posts
-                  </span>
-                </div>
-              </label>
-
-              {isPartOfSeries && (
-                <div className="conditional-section show">
-                  <div className="sidebar-form-group">
-                    <label htmlFor="series">
-                      Series
-                      <span className="tooltip-trigger">
-                        <span className="tooltip-icon">?</span>
-                        <span className="tooltip-content">Select which series this post belongs to</span>
-                      </span>
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select
-                        id="series"
-                        value={selectedSeriesId}
-                        onChange={(e) => setSelectedSeriesId(e.target.value)}
-                        className="form-select-desktop"
-                        disabled={loading}
-                        style={{ flex: 1 }}
-                      >
-                        <option value="">Choose series...</option>
-                        {availableSeries.map((series) => (
-                          <option key={series.id} value={series.id}>
-                            {series.title}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => setShowQuickCreateSeries(true)}
-                        className="btn-secondary-desktop"
-                        disabled={loading}
-                        title="Create new series"
-                      >
-                        <PlusIcon style={{ width: '14px', height: '14px' }} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="sidebar-form-group">
-                    <label htmlFor="series_order">
-                      Part #
-                      <span className="tooltip-trigger">
-                        <span className="tooltip-icon">?</span>
-                        <span className="tooltip-content">Order in series</span>
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      id="series_order"
-                      value={seriesOrder}
-                      onChange={(e) => setSeriesOrder(parseInt(e.target.value) || 1)}
-                      min="1"
-                      disabled={loading}
-                      className="form-input-desktop"
-                      style={{ maxWidth: '80px' }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Engagement Settings */}
-            <div className="sidebar-section">
-              <h4 className="sidebar-section-title">
-                <HeartIcon className="icon" />
-                Engagement
-              </h4>
-
-              <label className="sidebar-checkbox">
-                <input
-                  type="checkbox"
-                  name="comments_enabled"
-                  checked={formData.comments_enabled}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <div className="sidebar-checkbox-label">
-                  <span className="sidebar-checkbox-text">Allow Comments</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                    Users can comment
-                  </span>
-                </div>
-              </label>
-
-              <label className="sidebar-checkbox">
-                <input
-                  type="checkbox"
-                  name="reactions_enabled"
-                  checked={formData.reactions_enabled}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <div className="sidebar-checkbox-label">
-                  <span className="sidebar-checkbox-text">Allow Reactions</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                    Users can react
-                  </span>
-                </div>
-              </label>
-            </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <input
+              type="color"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-8 cursor-pointer"
+            />
           </div>
         </div>
-      </div>
-
-      {/* Form Actions - Footer */}
-      <div className="form-actions-desktop">
-        <button
-          type="button"
-          className="btn-cancel"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          <XIcon size={18} />
-          Cancel
-        </button>
-        
-        <button
-          type="button"
-          className="btn-save"
-          onClick={handleManualSaveDraft}
-          disabled={loading}
-          style={{
-            background: '#10b981',
-            color: 'white'
-          }}
-          title="Manually save draft (auto-save also runs automatically)"
-        >
-          <SaveIcon size={18} />
-          Save Draft Now
-        </button>
-        
-        <button
-          type="button"
-          className="btn-save"
-          onClick={handlePublish}
-          disabled={loading || !formData.title?.trim()}
-          style={{
-            background: 'var(--primary-600)',
-            color: 'white'
-          }}
-        >
-          <SendIcon size={18} />
-          Publish Now
-        </button>
-        <button
-          type="submit"
-          className="btn-save"
-          disabled={loading || !formData.title?.trim()}
-          onClick={handleSubmit}
-        >
-          {loading ? (
-            <>
-              <SaveIcon size={18} className="spinning" />
-              Creating...
-            </>
-          ) : (
-            <>
-              <SaveIcon size={18} />
-              Create Post
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Quick Create Series Modal */}
-      {showQuickCreateSeries && (
-        <QuickCreateSeriesModal
-          onClose={() => setShowQuickCreateSeries(false)}
-          onCreate={handleQuickCreateSeries}
-        />
       )}
     </div>
   );
 };
 
-// Quick Create Series Modal Component
-interface QuickCreateSeriesModalProps {
-  onClose: () => void;
-  onCreate: (title: string, visibility: string) => void;
-}
+// Background Color Picker
+const BgColorPicker: React.FC<{
+  value: string;
+  onChange: (color: string) => void;
+}> = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-const QuickCreateSeriesModal: React.FC<QuickCreateSeriesModalProps> = ({ onClose, onCreate }) => {
-  const [title, setTitle] = useState('');
-  const [visibility, setVisibility] = useState('PUBLIC');
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const handleCreate = async () => {
-    if (!title.trim()) {
-      alert('Please enter a series title');
-      return;
-    }
-    setLoading(true);
-    await onCreate(title, visibility);
-    setLoading(false);
-  };
+  const colors = [
+    '#ffffff', '#f2f2f2', '#d9d9d9', '#bfbfbf', '#8c8c8c', '#737373', '#595959', '#404040',
+    '#fff2cc', '#ffe599', '#ffd966', '#f1c232', '#bf9000', '#7f6000', '#3c2f00', '#1a1400',
+    '#d9ead3', '#b6d7a8', '#93c47d', '#6aa84f', '#38761d', '#274e13', '#163a0c', '#0b2608',
+    '#cfe2f3', '#9fc5e8', '#6fa8dc', '#3d85c6', '#0b5394', '#073763', '#03203a', '#01101f',
+  ];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <div className="modal-header">
-          <h3>Quick Create Series</h3>
-          <button className="btn-icon" onClick={onClose}>
-            <XIcon size={20} />
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
+        title="Background color"
+      >
+        <div className="w-5 h-5 rounded-full border border-slate-300" style={{ backgroundColor: value }} />
+        <ChevronDown className="w-4 h-4" />
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 w-64 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50">
+          <div className="grid grid-cols-8 gap-1">
+            {colors.map(color => (
+              <button
+                key={color}
+                onClick={() => {
+                  onChange(color);
+                  setIsOpen(false);
+                }}
+                className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform"
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <input
+              type="color"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-8 cursor-pointer"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Link Insert Modal
+const LinkModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onInsert: (url: string, text: string) => void;
+}> = ({ isOpen, onClose, onInsert }) => {
+  const [url, setUrl] = useState('');
+  const [text, setText] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Insert Link</h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          >
+            <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-
-        <div className="modal-body">
-          <div className="form-group-pro">
-            <label htmlFor="quickSeriesTitle" className="form-label-pro">
-              Series Title
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              URL
             </label>
             <input
-              type="text"
-              id="quickSeriesTitle"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter series title..."
-              className="form-input-pro"
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
               autoFocus
             />
           </div>
-
-          <div className="form-group-pro">
-            <label htmlFor="quickSeriesVisibility" className="form-label-pro">
-              Visibility
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Link Text (optional)
             </label>
-            <select
-              id="quickSeriesVisibility"
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value)}
-              className="form-select-pro"
-            >
-              <option value="PUBLIC">Public</option>
-              <option value="MEMBERS_ONLY">Members Only</option>
-              <option value="HIDDEN">Hidden</option>
-            </select>
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Click here"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
         </div>
-
-        <div className="modal-actions">
-          <button className="btn-secondary-pro" onClick={onClose} disabled={loading}>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
             Cancel
           </button>
-          <button className="btn-primary-pro" onClick={handleCreate} disabled={!title.trim() || loading}>
-            <PlusIcon />
-            {loading ? 'Creating...' : 'Create Series'}
+          <button
+            onClick={() => {
+              onInsert(url, text || url);
+              onClose();
+            }}
+            disabled={!url}
+            className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Insert Link
           </button>
         </div>
       </div>
@@ -1149,4 +277,1031 @@ const QuickCreateSeriesModal: React.FC<QuickCreateSeriesModalProps> = ({ onClose
   );
 };
 
-export default PostCreate;
+const SacredEditor: React.FC<SacredEditorProps> = ({ 
+  mode = 'create',
+  postId,
+  draftId,
+  initialData 
+}) => {
+  const navigate = useNavigate();
+  // const params = useParams();
+  
+  // Determine mode
+  const isCreateMode = mode === 'create' || (!postId && !draftId);
+  const isEditMode = mode === 'edit' || !!postId;
+  const isDraftMode = !!draftId;
+
+  // State
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('<p class="mb-6 opacity-40">Start your sermon or article...</p>');
+  const [autoSaveTime, setAutoSaveTime] = useState('just now');
+  const [metadata, setMetadata] = useState<PostMetadata>({
+    title: '',
+    contentType: 'Sermon Note',
+    series: '',
+    tags: [],
+    featuredImage: null,
+    videoUrl: '',
+    allowComments: true,
+    allowReactions: true,
+    featuredOnHomepage: false
+  });
+  const [newTag, setNewTag] = useState('');
+  const [isDraft, setIsDraft] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [series, setSeries] = useState<Array<{ id: string; title: string }>>([]);
+  const [showScriptureLookup, setShowScriptureLookup] = useState(false);
+  const [scriptureQuery, setScriptureQuery] = useState('');
+  const [scriptureResults, setScriptureResults] = useState<any[]>([]);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+
+  // Rich text formatting state
+  const [fontFamily, setFontFamily] = useState('Inter');
+  const [fontSize, setFontSize] = useState(16);
+  const [textColor, setTextColor] = useState('#000000');
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [formats, setFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+    h1: false,
+    h2: false,
+    h3: false,
+    alignLeft: true,
+    alignCenter: false,
+    alignRight: false,
+    alignJustify: false,
+    bulletList: false,
+    numberList: false,
+    blockquote: false,
+    code: false,
+    subscript: false,
+    superscript: false,
+  });
+  const CurrentAlignIcon: LucideIcon = formats.alignLeft 
+    ? AlignLeft 
+    : formats.alignCenter 
+      ? AlignCenter 
+      : formats.alignRight 
+        ? AlignRight 
+        : AlignJustify;
+
+  // Refs
+  const contentEditableRef = useRef<HTMLDivElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load series for dropdown
+  useEffect(() => {
+    const loadSeries = async () => {
+      try {
+        const data = await seriesService.getAllSeries();
+        setSeries(data);
+      } catch (err) {
+        console.error('Failed to load series:', err);
+      }
+    };
+    loadSeries();
+  }, []);
+
+  // Load post/draft data if in edit mode
+  useEffect(() => {
+    const loadPostData = async () => {
+      if (isEditMode && postId) {
+        setLoading(true);
+        try {
+          const post = await postService.getPost(postId);
+          setTitle(post.title || '');
+          setContent(post.content || '<p class="mb-6 opacity-40">Start your sermon or article...</p>');
+          setMetadata({
+            title: post.title || '',
+            contentType: post.content_type || 'Sermon Note',
+            series: post.series || '',
+            tags: (post as any).tags || [],
+            featuredImage: post.featured_image || null,
+            videoUrl: post.video_url || '',
+            allowComments: post.comments_enabled ?? true,
+            allowReactions: post.reactions_enabled ?? true,
+            featuredOnHomepage: (post as any).is_featured || false
+          });
+          setIsDraft(post.status !== 'PUBLISHED');
+        } catch (err) {
+          console.error('Failed to load post:', err);
+        } finally {
+          setLoading(false);
+        }
+      } else if (isDraftMode && draftId) {
+        setLoading(true);
+        try {
+          const draft = await draftService.getDraft(draftId);
+          const draftData = draft.draft_data || {};
+          setTitle(draftData.title || '');
+          setContent(draftData.content || '<p class="mb-6 opacity-40">Start your sermon or article...</p>');
+          setMetadata({
+            title: draftData.title || '',
+            contentType: draft.content_type || 'Sermon Note',
+            series: draftData.series || '',
+            tags: (draftData as any).tags || [],
+            featuredImage: draftData.featured_image || null,
+            videoUrl: draftData.video_url || '',
+            allowComments: draftData.comments_enabled ?? true,
+            allowReactions: draftData.reactions_enabled ?? true,
+            featuredOnHomepage: (draftData as any).is_featured || false
+          });
+          setIsDraft(true);
+        } catch (err) {
+          console.error('Failed to load draft:', err);
+        } finally {
+          setLoading(false);
+        }
+      } else if (initialData) {
+        setTitle(initialData.title || '');
+        setContent(initialData.content || '<p class="mb-6 opacity-40">Start your sermon or article...</p>');
+        setMetadata(prev => ({
+          ...prev,
+          ...initialData,
+          title: initialData.title || '',
+        }));
+      }
+    };
+
+    loadPostData();
+  }, [isEditMode, isDraftMode, postId, draftId, initialData]);
+
+  // Auto-resize title textarea
+  useEffect(() => {
+    if (titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = 'auto';
+      titleTextareaRef.current.style.height = `${titleTextareaRef.current.scrollHeight}px`;
+    }
+  }, [title]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (!isCreateMode && !isEditMode && !isDraftMode) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      handleAutoSave();
+    }, 30000);
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [title, content, metadata]);
+
+  const handleAutoSave = async () => {
+    if (!title.trim() && !content.trim()) return;
+
+    setSaving(true);
+    try {
+      const draftData = {
+        title,
+        content,
+        content_type: metadata.contentType,
+        series: metadata.series,
+        tags: metadata.tags,
+        featured_image: metadata.featuredImage === null ? undefined : metadata.featuredImage,
+        video_url: metadata.videoUrl,
+        comments_enabled: metadata.allowComments,
+        reactions_enabled: metadata.allowReactions,
+        is_featured: metadata.featuredOnHomepage,
+      };
+
+      if (isDraftMode && draftId) {
+        await draftService.updateDraft(draftId, { draft_data: draftData });
+      } else {
+        await draftService.createDraft({
+          draft_data: draftData,
+          content_type: metadata.contentType,
+          post: isEditMode && postId ? postId : undefined,
+        });
+      }
+      setAutoSaveTime('just now');
+    } catch (err) {
+      console.error('Auto-save failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setTitle(e.target.value);
+  };
+
+  const handleContentChange = () => {
+    if (contentEditableRef.current) {
+      setContent(contentEditableRef.current.innerHTML);
+    }
+  };
+
+  // Rich text formatting functions
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    handleContentChange();
+  };
+
+  const handleFormat = (format: keyof typeof formats) => {
+    switch (format) {
+      case 'bold':
+        execCommand('bold');
+        setFormats(prev => ({ ...prev, bold: !prev.bold }));
+        break;
+      case 'italic':
+        execCommand('italic');
+        setFormats(prev => ({ ...prev, italic: !prev.italic }));
+        break;
+      case 'underline':
+        execCommand('underline');
+        setFormats(prev => ({ ...prev, underline: !prev.underline }));
+        break;
+      case 'strikethrough':
+        execCommand('strikeThrough');
+        setFormats(prev => ({ ...prev, strikethrough: !prev.strikethrough }));
+        break;
+      case 'h1':
+        execCommand('formatBlock', '<h1>');
+        setFormats(prev => ({ ...prev, h1: !prev.h1, h2: false, h3: false }));
+        break;
+      case 'h2':
+        execCommand('formatBlock', '<h2>');
+        setFormats(prev => ({ ...prev, h2: !prev.h2, h1: false, h3: false }));
+        break;
+      case 'h3':
+        execCommand('formatBlock', '<h3>');
+        setFormats(prev => ({ ...prev, h3: !prev.h3, h1: false, h2: false }));
+        break;
+      case 'alignLeft':
+        execCommand('justifyLeft');
+        setFormats(prev => ({ ...prev, alignLeft: true, alignCenter: false, alignRight: false, alignJustify: false }));
+        break;
+      case 'alignCenter':
+        execCommand('justifyCenter');
+        setFormats(prev => ({ ...prev, alignLeft: false, alignCenter: true, alignRight: false, alignJustify: false }));
+        break;
+      case 'alignRight':
+        execCommand('justifyRight');
+        setFormats(prev => ({ ...prev, alignLeft: false, alignCenter: false, alignRight: true, alignJustify: false }));
+        break;
+      case 'alignJustify':
+        execCommand('justifyFull');
+        setFormats(prev => ({ ...prev, alignLeft: false, alignCenter: false, alignRight: false, alignJustify: true }));
+        break;
+      case 'bulletList':
+        execCommand('insertUnorderedList');
+        setFormats(prev => ({ ...prev, bulletList: !prev.bulletList }));
+        break;
+      case 'numberList':
+        execCommand('insertOrderedList');
+        setFormats(prev => ({ ...prev, numberList: !prev.numberList }));
+        break;
+      case 'blockquote':
+        execCommand('formatBlock', '<blockquote>');
+        setFormats(prev => ({ ...prev, blockquote: !prev.blockquote }));
+        break;
+      case 'code':
+        execCommand('formatBlock', '<pre>');
+        setFormats(prev => ({ ...prev, code: !prev.code }));
+        break;
+      case 'subscript':
+        execCommand('subscript');
+        setFormats(prev => ({ ...prev, subscript: !prev.subscript }));
+        break;
+      case 'superscript':
+        execCommand('superscript');
+        setFormats(prev => ({ ...prev, superscript: !prev.superscript }));
+        break;
+    }
+  };
+
+  const handleFontFamilyChange = (font: string) => {
+    setFontFamily(font);
+    execCommand('fontName', font);
+  };
+
+  const handleFontSizeChange = (size: number) => {
+    setFontSize(size);
+    execCommand('fontSize', size.toString());
+  };
+
+  const handleTextColorChange = (color: string) => {
+    setTextColor(color);
+    execCommand('foreColor', color);
+  };
+
+  const handleBgColorChange = (color: string) => {
+    setBgColor(color);
+    execCommand('hiliteColor', color);
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault();
+      if (!metadata.tags.includes(newTag.trim())) {
+        setMetadata({
+          ...metadata,
+          tags: [...metadata.tags, newTag.trim()]
+        });
+      }
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setMetadata({
+      ...metadata,
+      tags: metadata.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const toggleSwitch = (field: keyof Pick<PostMetadata, 'allowComments' | 'allowReactions' | 'featuredOnHomepage'>) => {
+    setMetadata({
+      ...metadata,
+      [field]: !metadata[field]
+    });
+  };
+
+  const handlePublish = async () => {
+    if (!title.trim()) {
+      alert('Please enter a title before publishing.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const postData = {
+        title,
+        content,
+        content_type: metadata.contentType,
+        series: metadata.series,
+        tags: metadata.tags,
+        featured_image: metadata.featuredImage === null ? undefined : metadata.featuredImage,
+        video_url: metadata.videoUrl,
+        comments_enabled: metadata.allowComments,
+        reactions_enabled: metadata.allowReactions,
+        is_featured: metadata.featuredOnHomepage,
+        status: 'PUBLISHED' as 'PUBLISHED',
+      };
+
+      if (isEditMode && postId) {
+        await postService.updatePost(postId, postData);
+        if (draftId) {
+          await draftService.deleteDraft(draftId);
+        }
+      } else if (isDraftMode && draftId) {
+        await draftService.publishDraft(draftId);
+      } else {
+        await postService.createPost(postData);
+      }
+      
+      navigate('/admin/content');
+    } catch (err) {
+      console.error('Publish failed:', err);
+      alert('Failed to publish. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    await handleAutoSave();
+  };
+
+  const handlePreview = () => {
+    const previewData = {
+      title,
+      content,
+      metadata,
+    };
+    localStorage.setItem('preview_data', JSON.stringify(previewData));
+    window.open('/preview', '_blank');
+  };
+
+  const handleScriptureLookup = async () => {
+    if (!scriptureQuery.trim()) return;
+    
+    setShowScriptureLookup(true);
+    setScriptureResults([
+      { reference: 'Psalm 23:1-3', text: 'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.' },
+      { reference: 'Isaiah 40:31', text: 'But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint.' },
+      { reference: 'Philippians 4:6-7', text: 'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus.' },
+      { reference: 'Romans 8:28', text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.' },
+      { reference: 'Jeremiah 29:11', text: 'For I know the plans I have for you, declares the Lord, plans for welfare and not for evil, to give you a future and a hope.' },
+    ]);
+  };
+
+  const insertScripture = (reference: string, text: string) => {
+    const scriptureBlock = `
+      <div class="my-10 border-l-4 border-primary/40 pl-8 py-2 bg-primary/5 rounded-r-lg relative group">
+        <span class="material-symbols-outlined absolute -left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-primary text-sm shadow-sm">menu_book</span>
+        <p class="italic text-2xl text-slate-700 font-serif leading-relaxed">"${text}"</p>
+        <cite class="block mt-3 font-display not-italic font-bold text-sm text-primary uppercase tracking-wider">${reference}</cite>
+      </div>
+    `;
+
+    if (contentEditableRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const div = document.createElement('div');
+        div.innerHTML = scriptureBlock;
+        const fragment = document.createDocumentFragment();
+        while (div.firstChild) {
+          fragment.appendChild(div.firstChild);
+        }
+        range.insertNode(fragment);
+      } else {
+        contentEditableRef.current.innerHTML += scriptureBlock;
+      }
+      handleContentChange();
+    }
+    setShowScriptureLookup(false);
+    setScriptureQuery('');
+  };
+
+  const handleInsertLink = (url: string, text: string) => {
+    if (!url) return;
+    
+    if (contentEditableRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+        // If text is selected, wrap it in a link
+        execCommand('createLink', url);
+      } else {
+        // If no text selected, insert a new link with the provided text
+        const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary underline">${text || url}</a>`;
+        execCommand('insertHTML', linkHtml);
+      }
+      handleContentChange();
+    }
+  };
+
+  const handleMoveToTrash = async () => {
+    if (!window.confirm('Move this post to trash? It can be restored later.')) return;
+    
+    try {
+      if (isEditMode && postId) {
+        await postService.deletePost(postId);
+      } else if (isDraftMode && draftId) {
+        await draftService.deleteDraft(draftId);
+      }
+      navigate('/admin/content');
+    } catch (err) {
+      console.error('Failed to move to trash:', err);
+      alert('Failed to move to trash. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-3 text-slate-500">
+          <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
+          <p className="text-sm font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden h-screen flex flex-col">
+      {/* Header / Navigation Bar */}
+      <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 z-30 shrink-0" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 text-primary">
+            <span className="material-symbols-outlined text-3xl">auto_stories</span>
+            <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Sacred Editor</h2>
+          </div>
+          <nav className="hidden md:flex items-center gap-1 text-slate-500 dark:text-slate-400 text-sm font-medium">
+            <button onClick={() => navigate('/admin/content')} className="hover:text-primary transition-colors px-2">
+              Content
+            </button>
+            <span className="material-symbols-outlined text-sm">chevron_right</span>
+            <span className="text-slate-900 dark:text-white">
+              {isCreateMode ? 'New Post' : isEditMode ? 'Edit Post' : 'Edit Draft'}
+            </span>
+          </nav>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handlePreview}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-xl">visibility</span>
+            Preview
+          </button>
+          <button 
+            onClick={handleSaveDraft}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <span className="material-symbols-outlined text-xl animate-spin">progress_activity</span>
+                Saving...
+              </>
+            ) : (
+              'Save as Draft'
+            )}
+          </button>
+          <div className="h-8 w-[1px] bg-slate-200 dark:border-slate-700 mx-2"></div>
+          <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
+            <img 
+              alt="User Profile" 
+              className="w-full h-full object-cover" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXL7WBL-u4dR6h6BciTvdrauYfLmiLMlfCfkX6FGolltXhn7ZQ9iLizTazM_R1w1OOauD-SUDYeIt2w1xM1d2Zfy5z8rUiBbRXURoXm_Ph1fynNlwVBsO9iSSnx851XSUWDRBOw8JyXNXX5-xYuS8eRtOl8C33VDWtGxvLz0DjbFxwllTZbhSJJSyHReBC2GSREMijeS353R2uw1bQFnpiJr0kNcAPv68fQ3G-V4T2ClCXx5t7RWjCPDm8jAJnG4h8_hLkXd6YxbQ"
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area: Split Pane */}
+      <main className="flex flex-1 overflow-hidden">
+        {/* Left Pane: Writing Canvas (75%) */}
+        <section className="writing-canvas flex-1 overflow-y-auto relative flex justify-center py-8 px-6">
+          <div className="max-w-[800px] w-full relative">
+            {/* Auto-save indicator */}
+            <div className="absolute top-0 right-0 flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium uppercase tracking-widest z-10">
+              <span className="material-symbols-outlined text-xs">
+                {saving ? 'sync' : 'sync_saved_locally'}
+              </span>
+              {saving ? 'Saving...' : `Auto-saved ${autoSaveTime}`}
+            </div>
+
+            {/* Post Title */}
+            <textarea
+              ref={titleTextareaRef}
+              value={title}
+              onChange={handleTitleChange}
+              className="fraunces-title w-full bg-transparent border-none focus:ring-0 text-5xl font-bold text-slate-900 dark:text-slate-800 placeholder-slate-300 resize-none leading-tight mb-8 mt-8"
+              placeholder="Enter a soulful title..."
+              rows={1}
+            />
+
+            {/* Rich Text Toolbar */}
+            {/* Rich Text Toolbar - Redesigned */}
+            {/* Rich Text Toolbar - Compact Single Row */}
+            <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl mb-6 p-1.5 shadow-sm flex flex-wrap items-center justify-between gap-1">
+              {/* Left side - Core formatting */}
+              <div className="flex items-center gap-1">
+                {/* Font controls grouped in dropdown */}
+                <div className="flex items-center gap-1 mr-1">
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => handleFontFamilyChange(e.target.value)}
+                    className="text-sm bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                    title="Font Family"
+                  >
+                    <option value="Inter">Inter</option>
+                    <option value="Fraunces">Fraunces</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                  </select>
+                  
+                  <select
+                    value={fontSize}
+                    onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+                    className="text-sm bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 w-16 focus:outline-none focus:ring-1 focus:ring-primary"
+                    title="Font Size"
+                  >
+                    {[12, 14, 16, 18, 20, 24, 28, 32, 36, 48].map(size => (
+                      <option key={size} value={size}>{size}px</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                {/* Text formatting buttons */}
+                <ToolbarButton icon={Bold} active={formats.bold} onClick={() => handleFormat('bold')} title="Bold (Ctrl+B)" />
+                <ToolbarButton icon={Italic} active={formats.italic} onClick={() => handleFormat('italic')} title="Italic (Ctrl+I)" />
+                <ToolbarButton icon={Underline} active={formats.underline} onClick={() => handleFormat('underline')} title="Underline (Ctrl+U)" />
+                <ToolbarButton icon={Strikethrough} active={formats.strikethrough} onClick={() => handleFormat('strikethrough')} title="Strikethrough" />
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                {/* Color pickers as dropdowns */}
+                <TextColorPicker value={textColor} onChange={handleTextColorChange} />
+                <BgColorPicker value={bgColor} onChange={handleBgColorChange} />
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                {/* Headings dropdown */}
+                <div className="relative group">
+                  <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1" title="Headings">
+                    <Heading className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  <div className="absolute top-full left-0 mt-1 hidden group-hover:block hover:block bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 min-w-[120px] z-50">
+                    <button onClick={() => handleFormat('h1')} className="w-full text-left px-4 py-2 text-lg font-bold hover:bg-slate-100 dark:hover:bg-slate-700">H1</button>
+                    <button onClick={() => handleFormat('h2')} className="w-full text-left px-4 py-2 text-base font-bold hover:bg-slate-100 dark:hover:bg-slate-700">H2</button>
+                    <button onClick={() => handleFormat('h3')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700">H3</button>
+                  </div>
+                </div>
+
+                {/* Alignment dropdown */}
+                <div className="relative group">
+                  <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1" title="Alignment">
+                    <CurrentAlignIcon className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  <div className="absolute top-full left-0 mt-1 hidden group-hover:block hover:block bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-1 z-50">
+                    <button onClick={() => handleFormat('alignLeft')} className={`p-2 rounded ${formats.alignLeft ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Align Left">
+                      <AlignLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => handleFormat('alignCenter')} className={`p-2 rounded ${formats.alignCenter ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Align Center">
+                      <AlignCenter className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => handleFormat('alignRight')} className={`p-2 rounded ${formats.alignRight ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Align Right">
+                      <AlignRight className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => handleFormat('alignJustify')} className={`p-2 rounded ${formats.alignJustify ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Justify">
+                      <AlignJustify className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lists */}
+                <ToolbarButton icon={List} active={formats.bulletList} onClick={() => handleFormat('bulletList')} title="Bullet List" />
+                <ToolbarButton icon={ListOrdered} active={formats.numberList} onClick={() => handleFormat('numberList')} title="Numbered List" />
+              </div>
+
+              {/* Right side - Insert & utilities */}
+              <div className="flex items-center gap-1">
+                <ToolbarButton icon={Quote} active={formats.blockquote} onClick={() => handleFormat('blockquote')} title="Blockquote" />
+                <ToolbarButton icon={Code} active={formats.code} onClick={() => handleFormat('code')} title="Code Block" />
+                
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                {/* Insert dropdown */}
+                <div className="relative group">
+                  <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1" title="Insert">
+                    <PlusCircle className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  <div className="absolute top-full right-0 mt-1 hidden group-hover:block hover:block bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-1 min-w-[160px] z-50">
+                    <button onClick={() => setShowLinkModal(true)} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded flex items-center gap-2">
+                      <Link className="w-4 h-4" /> Link
+                    </button>
+                    <button onClick={() => document.getElementById('image-upload')?.click()} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded flex items-center gap-2">
+                      <Image className="w-4 h-4" /> Image
+                    </button>
+                    <button onClick={() => execCommand('insertHTML', '<table border="1" cellpadding="5" style="border-collapse: collapse;"><tr><td>Cell 1</td><td>Cell 2</td></tr><tr><td>Cell 3</td><td>Cell 4</td></tr></table>')} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded flex items-center gap-2">
+                      <Table className="w-4 h-4" /> Table
+                    </button>
+                    <button onClick={() => execCommand('insertHorizontalRule')} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded flex items-center gap-2">
+                      <SeparatorHorizontal className="w-4 h-4" /> Horizontal Rule
+                    </button>
+                  </div>
+                </div>
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                <ToolbarButton icon={Undo} onClick={() => { document.execCommand('undo'); handleContentChange(); }} title="Undo (Ctrl+Z)" />
+                <ToolbarButton icon={Redo} onClick={() => { document.execCommand('redo'); handleContentChange(); }} title="Redo (Ctrl+Y)" />
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                <ToolbarButton icon={BookOpen} onClick={() => setShowScriptureLookup(true)} title="Scripture Lookup" />
+              </div>
+
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      execCommand('insertImage', reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </div>
+
+            {/* Rich Text Editor Zone */}
+            <div className="prose prose-slate prose-lg max-w-none text-slate-800 dark:text-slate-700">
+              <div
+                ref={contentEditableRef}
+                className="rich-editor min-h-[400px] text-xl leading-relaxed font-serif"
+                contentEditable
+                dir="ltr"
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: content }}
+                onInput={handleContentChange}
+                onBlur={handleContentChange}
+                style={{
+                  fontFamily: fontFamily === 'Inter' ? 'Inter, sans-serif' : 
+                             fontFamily === 'Fraunces' ? 'Fraunces, serif' : 
+                             fontFamily,
+                  fontSize: `${fontSize}px`,
+                  color: textColor,
+                  backgroundColor: bgColor,
+                  direction: 'ltr',
+                  unicodeBidi: 'normal',
+                  textAlign: 'left',
+                }}
+              />
+            </div>
+
+            {/* Inline Scripture Lookup Trigger */}
+            <div className="mt-8 flex justify-center">
+              <button 
+                onClick={() => setShowScriptureLookup(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-primary hover:text-white text-primary border border-primary/20 rounded-full shadow-sm transition-all font-medium text-sm"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Scripture Lookup
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Right Pane: Sidebar Properties (25%) */}
+        <aside className="sidebar-panel w-80 sidebar-scroll overflow-y-auto shrink-0 z-20 flex flex-col p-6 gap-8">
+          {/* Section 1: Publishing Status */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Publishing</h3>
+              <span className={`px-2 py-0.5 ${isDraft ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'} text-[10px] font-bold rounded uppercase`}>
+                {isDraft ? 'Draft' : 'Published'}
+              </span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={handlePublish}
+                disabled={saving}
+                className="w-full bg-primary-dark hover:bg-primary-dark/90 text-white font-bold py-3 rounded-lg shadow-lg shadow-primary-dark/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                Publish Now
+              </button>
+              <div className="flex items-center gap-2 text-slate-500 text-xs">
+                <span className="material-symbols-outlined text-sm">schedule</span>
+                <span>Schedule for later</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 2: Content Details */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Post Metadata</h3>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Content Type</label>
+                <div className="relative">
+                  <select 
+                    value={metadata.contentType}
+                    onChange={(e) => setMetadata({...metadata, contentType: e.target.value})}
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary text-slate-700"
+                  >
+                    <option>Sermon Note</option>
+                    <option>Article / Essay</option>
+                    <option>Devotional</option>
+                    <option>Announcement</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-slate-600">Series</label>
+                  <button className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-xs">add</span> NEW
+                  </button>
+                </div>
+                <div className="relative">
+                  <select 
+                    value={metadata.series}
+                    onChange={(e) => setMetadata({...metadata, series: e.target.value})}
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary text-slate-700"
+                  >
+                    <option value="">None</option>
+                    {series.map(s => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Tags</label>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {metadata.tags.map((tag) => (
+                    <span key={tag} className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
+                      {tag} 
+                      <span 
+                        className="material-symbols-outlined text-[10px] cursor-pointer"
+                        onClick={() => handleRemoveTag(tag)}
+                      >close</span>
+                    </span>
+                  ))}
+                </div>
+                <input 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary" 
+                  placeholder="Add tag and press Enter..." 
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={handleAddTag}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Section 3: Media */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Media Assets</h3>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Featured Image</label>
+                <ImageUploadInput
+                  value={metadata.featuredImage || ''}
+                  onChange={(url) => setMetadata({...metadata, featuredImage: url})}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Video Link</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-lg">play_circle</span>
+                  <input 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-primary focus:border-primary" 
+                    placeholder="YouTube or Vimeo URL" 
+                    type="text"
+                    value={metadata.videoUrl}
+                    onChange={(e) => setMetadata({...metadata, videoUrl: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 4: Engagement */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Engagement</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-700">Allow Comments</span>
+                <button 
+                  onClick={() => toggleSwitch('allowComments')}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${
+                    metadata.allowComments ? 'bg-primary' : 'bg-slate-200'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 size-4 bg-white rounded-full shadow-sm transition-all ${
+                    metadata.allowComments ? 'right-0.5' : 'left-0.5'
+                  }`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-700">Emoji Reactions</span>
+                <button 
+                  onClick={() => toggleSwitch('allowReactions')}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${
+                    metadata.allowReactions ? 'bg-primary' : 'bg-slate-200'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 size-4 bg-white rounded-full shadow-sm transition-all ${
+                    metadata.allowReactions ? 'right-0.5' : 'left-0.5'
+                  }`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-700">Feature on Homepage</span>
+                <button 
+                  onClick={() => toggleSwitch('featuredOnHomepage')}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${
+                    metadata.featuredOnHomepage ? 'bg-primary' : 'bg-slate-200'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 size-4 bg-white rounded-full shadow-sm transition-all ${
+                    metadata.featuredOnHomepage ? 'right-0.5' : 'left-0.5'
+                  }`} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="mt-auto pt-6 border-t border-slate-100">
+            <button 
+              onClick={handleMoveToTrash}
+              className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2 rounded-lg text-xs font-bold transition-all"
+            >
+              <span className="material-symbols-outlined text-lg">delete</span>
+              Move to Trash
+            </button>
+          </div>
+        </aside>
+      </main>
+
+      {/* Scripture Lookup Modal */}
+      {showScriptureLookup && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) setShowScriptureLookup(false); }}
+        >
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-xl shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-primary text-xl">menu_book</span>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Scripture Lookup</h2>
+              </div>
+              <button
+                onClick={() => setShowScriptureLookup(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                  <span className="material-symbols-outlined text-lg">search</span>
+                </span>
+                <input
+                  className="w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Search by reference or keyword (e.g., Psalm 23, love, grace)"
+                  value={scriptureQuery}
+                  onChange={e => setScriptureQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleScriptureLookup()}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6">
+              {scriptureResults.length > 0 ? (
+                <div className="space-y-4">
+                  {scriptureResults.map((result, index) => (
+                    <div 
+                      key={index}
+                      className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all"
+                      onClick={() => insertScripture(result.reference, result.text)}
+                    >
+                      <p className="text-sm font-bold text-primary">{result.reference}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 line-clamp-2">{result.text}</p>
+                      <button className="mt-2 text-xs text-primary font-semibold">Insert</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-400">
+                  <span className="material-symbols-outlined text-4xl text-slate-200 dark:text-slate-700">menu_book</span>
+                  <p className="mt-2 text-sm font-medium">Enter a reference to search</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link Insert Modal */}
+      <LinkModal
+        isOpen={showLinkModal}
+        onClose={() => setShowLinkModal(false)}
+        onInsert={handleInsertLink}
+      />
+
+      <style>{`
+        .writing-canvas {
+          background-color: #F7F4F0;
+        }
+        .sidebar-panel {
+          background-color: #FFFFFF;
+          border-left: 1px solid #E5E7EB;
+        }
+        .rich-editor:focus {
+          outline: none;
+        }
+        .fraunces-title {
+          font-family: 'Fraunces', serif;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .dark .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: #334155;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default SacredEditor;

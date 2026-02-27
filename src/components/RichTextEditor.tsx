@@ -6,6 +6,29 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import ReactQuill from 'react-quill';
+import {
+  Undo,
+  Redo,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  List,
+  ListOrdered,
+  ListIndentDecrease,
+  ListIndentIncrease,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Quote,
+  Code,
+  Link,
+  Image,
+  Eraser,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import 'react-quill/dist/quill.snow.css';
 import './RichTextEditor.css';
 
@@ -182,10 +205,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <div id="toolbar" className="rich-text-toolbar">
         <div className="toolbar-group">
           <button className="ql-undo" title="Undo" type="button">
-            ↶
+            <Undo className="w-4 h-4" />
           </button>
           <button className="ql-redo" title="Redo" type="button">
-            ↷
+            <Redo className="w-4 h-4" />
           </button>
         </div>
 
@@ -211,16 +234,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-bold" title="Bold" type="button">
-            <strong>B</strong>
+            <Bold className="w-4 h-4" />
           </button>
           <button className="ql-italic" title="Italic" type="button">
-            <em>I</em>
+            <Italic className="w-4 h-4" />
           </button>
           <button className="ql-underline" title="Underline" type="button">
-            <u>U</u>
+            <Underline className="w-4 h-4" />
           </button>
           <button className="ql-strike" title="Strikethrough" type="button">
-            <s>S</s>
+            <Strikethrough className="w-4 h-4" />
           </button>
         </div>
 
@@ -307,16 +330,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-list" value="ordered" title="Numbered List" type="button">
-            1. 2. 3.
+            <ListOrdered className="w-4 h-4" />
           </button>
           <button className="ql-list" value="bullet" title="Bullet List" type="button">
-            • • •
+            <List className="w-4 h-4" />
           </button>
           <button className="ql-indent" value="-1" title="Decrease Indent" type="button">
-            ←
+            <ListIndentDecrease className="w-4 h-4" />
           </button>
           <button className="ql-indent" value="+1" title="Increase Indent" type="button">
-            →
+            <ListIndentIncrease className="w-4 h-4" />
           </button>
         </div>
 
@@ -324,16 +347,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-align" value="" title="Align Left" type="button">
-            ≡
+            <AlignLeft className="w-4 h-4" />
           </button>
           <button className="ql-align" value="center" title="Align Center" type="button">
-            ☰
+            <AlignCenter className="w-4 h-4" />
           </button>
           <button className="ql-align" value="right" title="Align Right" type="button">
-            ≣
+            <AlignRight className="w-4 h-4" />
           </button>
           <button className="ql-align" value="justify" title="Align Justify" type="button">
-            ≡
+            <AlignJustify className="w-4 h-4" />
           </button>
         </div>
 
@@ -341,10 +364,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-blockquote" title="Blockquote" type="button">
-            "
+            <Quote className="w-4 h-4" />
           </button>
           <button className="ql-code-block" title="Code Block" type="button">
-            {'</>'}
+            <Code className="w-4 h-4" />
           </button>
         </div>
 
@@ -352,10 +375,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-link" title="Insert Link" type="button">
-            🔗
+            <Link className="w-4 h-4" />
           </button>
           <button className="ql-image" title="Insert Image" type="button">
-            🖼️
+            <Image className="w-4 h-4" />
           </button>
         </div>
 
@@ -363,7 +386,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         <div className="toolbar-group">
           <button className="ql-clean" title="Clear Formatting" type="button">
-            🗑️
+            <Eraser className="w-4 h-4" />
           </button>
         </div>
 
@@ -376,7 +399,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? '⛶' : '⛶'}
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>

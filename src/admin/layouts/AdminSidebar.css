@@ -3,7 +3,7 @@
  * Professional enterprise sidebar design
  */
 
-.admin-sidebar-modern {
+ .admin-sidebar-modern {
   width: 280px;
   height: 100vh;
   position: fixed;
@@ -14,15 +14,17 @@
   display: flex;
   flex-direction: column;
   z-index: 1000;
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 /* Brand Header */
-.sidebar-brand {
+ .sidebar-brand {
   padding: var(--admin-space-lg);
   border-bottom: 1px solid var(--admin-sidebar-border);
   display: flex;
   align-items: center;
   gap: var(--admin-space-md);
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 .brand-icon {
@@ -56,11 +58,12 @@
 }
 
 /* Navigation */
-.sidebar-navigation {
+ .sidebar-navigation {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--admin-space-md) 0;
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 .sidebar-navigation::-webkit-scrollbar {
@@ -150,9 +153,10 @@
 }
 
 /* Footer */
-.sidebar-footer-modern {
+ .sidebar-footer-modern {
   border-top: 1px solid var(--admin-sidebar-border);
   padding: var(--admin-space-md);
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 /* Context Switcher */
