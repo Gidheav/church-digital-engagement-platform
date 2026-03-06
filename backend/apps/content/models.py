@@ -148,6 +148,18 @@ class Post(models.Model):
         help_text="Content category/topic (e.g., Mental Health, Prayer, Marriage)"
     )
     
+    # Devotional-specific fields
+    scripture = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Scripture reference or verse (for devotional content)"
+    )
+    prayer = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Prayer text (for devotional content)"
+    )
+    
     # Scheduling (for daily words and time-based content)
     scheduled_date = models.DateField(
         null=True,

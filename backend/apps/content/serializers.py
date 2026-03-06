@@ -354,7 +354,7 @@ class DailyWordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'content', 'scheduled_date', 'day_of_week_display',
+            'id', 'title', 'content', 'scripture', 'prayer', 'scheduled_date', 'day_of_week_display',
             'author', 'author_name', 'author_email', 'status', 'published_at',
             'featured_image', 'audio_url', 'category', 'views_count',
             'comments_enabled', 'reactions_enabled', 'is_featured',
@@ -376,7 +376,7 @@ class DailyWordCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'title', 'content', 'scheduled_date', 'category',
+            'title', 'content', 'scripture', 'prayer', 'scheduled_date', 'category',
             'featured_image', 'audio_url', 'comments_enabled', 'reactions_enabled',
             'is_featured', 'featured_priority'
         ]
@@ -390,7 +390,7 @@ class DailyWordCreateUpdateSerializer(serializers.ModelSerializer):
         """Create a new daily word post"""
         from apps.users.models import User
         request = self.context.get('request')
-        author = request.user if request else User.objects.first()
+        author = validated_data.pop('author', None) or (request.user if request else User.objects.first())
         
         # Set content_type to 'devotional' if not already set
         try:
@@ -407,7 +407,7 @@ class DailyWordCreateUpdateSerializer(serializers.ModelSerializer):
             author=author,
             content_type=devotional_type,
             post_type=PostType.DEVOTIONAL,
-            status=PostStatus.SCHEDULED,
+            status=PostStatus.DRAFT,
             **validated_data
         )
         return post

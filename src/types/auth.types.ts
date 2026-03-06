@@ -17,7 +17,10 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   dateJoined: string;
+  phone?: string;
   phoneNumber?: string;
+  location?: string;
+  website?: string;
   profilePicture?: string;
   bio?: string;
   emailVerified?: boolean;

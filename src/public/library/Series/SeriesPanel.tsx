@@ -148,8 +148,12 @@ const SeriesPanel: React.FC = () => {
                   style={{ backgroundImage: `url('${authorAvatar}')` }}
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-primary/20 ring-2 ring-primary/20 flex items-center justify-center">
-                  <Icon name="person" size={18} className="text-primary" />
+                <div className="h-10 w-10 rounded-full bg-primary/20 ring-2 ring-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                  {(() => {
+                    const parts = authorName.trim().split(' ').filter(Boolean);
+                    if (parts.length === 1) return parts[0][0].toUpperCase();
+                    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                  })()}
                 </div>
               )}
               <span className="text-lg font-medium text-slate-800">{authorName}</span>

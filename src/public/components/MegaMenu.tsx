@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Icon from '../../components/common/Icon';
 
 interface MegaMenuProps {
-  currentPage?: 'home' | 'library' | 'series' | 'practices' | 'connect' | 'events';
+  currentPage?: 'home' | 'library' | 'series' | 'practices' | 'connect' | 'events' | 'bible';
 }
 
 /**

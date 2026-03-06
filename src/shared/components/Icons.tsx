@@ -191,3 +191,18 @@ export const ArrowRightIcon: React.FC<IconProps> = ({ size = 24, className = '',
     <polyline points="12 5 19 12 12 19" />
   </svg>
 );
+
+export const SendIcon: React.FC<IconProps> = ({ size = 24, className = '', strokeWidth = 2 }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+export const SearchIcon: React.FC<IconProps> = ({ size = 24, className = '', strokeWidth = 2 }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.35-4.35" />
+  </svg>
+);
+

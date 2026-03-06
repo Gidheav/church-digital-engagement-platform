@@ -14,11 +14,10 @@ import {
   CalendarIcon,
   MessageCircleIcon,
   HeartIcon,
-  UserIcon,
+  ChartBarIcon,
   SettingsIcon,
   GlobeIcon,
   HomeIcon,
-  LogoutIcon,
   XIcon,
 } from '../../shared/components/Icons';
 import './MemberSidebar.css';
@@ -41,30 +40,20 @@ const memberNavigationItems: NavItem[] = [
   { id: 'events', label: 'Events & Activities', icon: CalendarIcon },
   { id: 'community', label: 'Community', icon: MessageCircleIcon },
   { id: 'prayer', label: 'Prayer Requests', icon: HeartIcon },
-  { id: 'profile', label: 'My Profile', icon: UserIcon },
+  { id: 'giving', label: 'Giving History', icon: ChartBarIcon },
+  { id: 'chat', label: 'Chat', icon: MessageCircleIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 const MemberSidebar: React.FC<SidebarProps> = ({ activeView, isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
 
   const handleNavigation = (view: string) => {
     // Navigate to the member sub-route
     const path = view === 'overview' ? '/member' : `/member/${view}`;
     navigate(path);
     onClose(); // Close mobile drawer after navigation
-  };
-
-  const getUserInitials = () => {
-    const first = user?.firstName?.charAt(0) || '';
-    const last = user?.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || 'M';
   };
 
   const canAccessAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MODERATOR;
@@ -151,24 +140,6 @@ const MemberSidebar: React.FC<SidebarProps> = ({ activeView, isOpen, onClose }) 
                 <span>Admin Area</span>
               </button>
             )}
-          </div>
-
-          {/* User Info */}
-          <div className="sidebar-user">
-            <div className="user-avatar">
-              {getUserInitials()}
-            </div>
-            <div className="user-info">
-              <div className="user-name">{user?.firstName} {user?.lastName}</div>
-              <div className="user-role">Member</div>
-            </div>
-            <button
-              className="user-logout"
-              onClick={handleLogout}
-              title="Logout"
-            >
-              <LogoutIcon size={18} />
-            </button>
           </div>
         </div>
       </aside>

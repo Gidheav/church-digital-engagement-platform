@@ -182,9 +182,15 @@ const MemberTopBar: React.FC<TopBarProps> = ({
               className="topbar-user-btn"
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
-              <div className="user-avatar-small">
-                {getUserInitials()}
-              </div>
+              {user?.profilePicture ? (
+                <div className="user-avatar-small user-avatar-img">
+                  <img src={user.profilePicture} alt={user.firstName} />
+                </div>
+              ) : (
+                <div className="user-avatar-small">
+                  {getUserInitials()}
+                </div>
+              )}
               <span className="user-name-desktop">{user?.firstName}</span>
               <ChevronDownIcon size={16} />
             </button>
@@ -192,9 +198,15 @@ const MemberTopBar: React.FC<TopBarProps> = ({
             {showUserMenu && (
               <div className="dropdown-menu user-menu">
                 <div className="user-menu-header">
-                  <div className="user-avatar-large">
-                    {getUserInitials()}
-                  </div>
+                  {user?.profilePicture ? (
+                    <div className="user-avatar-large user-avatar-img">
+                      <img src={user.profilePicture} alt={user.firstName} />
+                    </div>
+                  ) : (
+                    <div className="user-avatar-large">
+                      {getUserInitials()}
+                    </div>
+                  )}
                   <div className="user-menu-info">
                     <div className="user-menu-name">{user?.firstName} {user?.lastName}</div>
                     <div className="user-menu-email">{user?.email}</div>

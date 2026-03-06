@@ -218,11 +218,19 @@ const SeriesPage: React.FC = () => {
                           </p>
                         )}
 
-                        {/* Author — initials avatar */}
+                        {/* Author — profile image or initials avatar */}
                         <div className="mt-2 flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${bg}`}>
-                            {initials}
-                          </div>
+                          {series.author?.profile_picture ? (
+                            <img
+                              src={series.author.profile_picture}
+                              alt={authorName}
+                              className="w-8 h-8 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${bg}`}>
+                              {initials}
+                            </div>
+                          )}
                           <span className="text-base text-text-muted font-display">{authorName}</span>
                         </div>
                       </div>

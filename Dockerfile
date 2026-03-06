@@ -13,6 +13,8 @@ RUN npm install --legacy-peer-deps --production=false
 COPY public/ ./public/
 COPY src/ ./src/
 COPY tsconfig.json ./
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
 
 # Build optimized production React app with production API URL
 ENV NODE_ENV=production

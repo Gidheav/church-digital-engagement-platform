@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import DashboardOverview from './DashboardOverview';
+import DashboardOverview from './Dashboard';
 
 const AdminDashboard: React.FC = () => (
   <DashboardOverview />

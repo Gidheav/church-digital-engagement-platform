@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { PublicLayout } from '../../layouts';
 import publicContentService, { PublicPost } from '../../../services/publicContent.service';
 import Icon from '../../../components/common/Icon';
+import DiscussionSection from '../../../components/DiscussionSection';
 
 interface SermonDetailProps {
   sermonId?: string;
@@ -178,8 +179,11 @@ const SermonDetail: React.FC<SermonDetailProps> = () => {
             )}
 
             {activeTab === 'guide' && (
-              <div className="prose prose-lg max-w-none text-graphite">
-                <p className="italic">Discussion guide will be available soon.</p>
+              <div className="discussion-tab-content">
+                <DiscussionSection 
+                  postId={id!} 
+                  commentsEnabled={post?.comments_enabled !== false} 
+                />
               </div>
             )}
 

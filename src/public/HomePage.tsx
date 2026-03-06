@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import SharedNavigation from './shared/SharedNavigation';
 import Icon from '../components/common/Icon';
 import { weeklyFlowService } from '../services/weeklyFlow.service';
+import { dailyWordService } from '../services/dailyWord.service';
 
 // ============================================================================
 // LAZY LOADED COMPONENTS (Code Splitting for Below-Fold Content)
@@ -132,9 +133,18 @@ const WeeklyFlowSection = memo(() => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [topicMap, setTopicMap] = useState<Record<string, string>>({});
+
+  // Returns the ISO date string for a given day-of-week in the current week
+  const getDateForDay = (dayOfWeek: number): string => {
+    const t = new Date();
+    const d = new Date(t);
+    d.setDate(t.getDate() - t.getDay() + dayOfWeek);
+    return d.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
-    const loadWeeklyEvents = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         const data = await weeklyFlowService.getAllWithCache();
@@ -146,22 +156,35 @@ const WeeklyFlowSection = memo(() => {
       } finally {
         setLoading(false);
       }
+
+      // Fetch daily-word topics for the current week (may span two months)
+      try {
+        const weekDates: string[] = [];
+        for (let d = 0; d < 7; d++) weekDates.push(getDateForDay(d));
+        const months = [...new Set(weekDates.map(s => s.substring(0, 7)))];
+        const map: Record<string, string> = {};
+        for (const ym of months) {
+          const [y, m] = ym.split('-').map(Number);
+          const cal = await dailyWordService.getCalendar(m, y);
+          for (const day of cal.days) {
+            if (day.has_post && day.title) {
+              const key = `${y}-${String(m).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
+              map[key] = day.title;
+            }
+          }
+        }
+        setTopicMap(map);
+      } catch { /* topics are optional – fail silently */ }
     };
 
-    loadWeeklyEvents();
+    loadData();
   }, []);
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const handleDayClick = (dayOfWeek: number) => {
-    // Calculate date for this day of week
-    const today = new Date();
-    const dayDifference = dayOfWeek - today.getDay();
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + dayDifference);
-    const dateStr = targetDate.toISOString().split('T')[0];
-    
-    navigate(`/daily-word/${dateStr}`);
+    navigate(`/daily-word/${getDateForDay(dayOfWeek)}`);
   };
 
   if (error) {
@@ -197,9 +220,11 @@ const WeeklyFlowSection = memo(() => {
         ) : (
           events.map((event) => {
             const dayName = dayNames[event.day_of_week];
-            const today = new Date();
-            const isToday = today.getDay() === event.day_of_week;
-            
+            const isToday = new Date().getDay() === event.day_of_week;
+            const dateStr = getDateForDay(event.day_of_week);
+            const isFuture = dateStr > todayStr;
+            const topic = !isFuture ? topicMap[dateStr] : undefined;
+
             return (
               <button
                 key={event.id}
@@ -211,16 +236,21 @@ const WeeklyFlowSection = memo(() => {
                 <span className={`text-xs uppercase tracking-widest ${isToday ? 'text-primary font-bold' : 'text-text-muted'} mb-2`}>
                   {dayName}
                 </span>
-                <div 
-                  className={`w-1.5 h-1.5 ${isToday ? 'w-2 h-2 bg-primary rounded-full mb-4 animate-pulse' : 'bg-accent-sand/50 rounded-full mb-4'}`} 
+                <div
+                  className={`w-1.5 h-1.5 ${isToday ? 'w-2 h-2 bg-primary rounded-full mb-4 animate-pulse' : 'bg-accent-sand/50 rounded-full mb-4'}`}
                   aria-hidden="true"
-                ></div>
+                />
                 <p className={`text-base font-medium ${isToday ? 'font-bold text-primary uppercase' : 'text-text-muted'}`}>
                   {event.title}
                 </p>
                 <p className={`text-xs ${isToday ? 'text-primary' : 'text-text-muted/60'} mt-1`}>
                   {event.time}
                 </p>
+                {topic && (
+                  <p className="text-[11px] font-serif italic text-primary/70 mt-2 line-clamp-2 leading-snug">
+                    {topic}
+                  </p>
+                )}
               </button>
             );
           })

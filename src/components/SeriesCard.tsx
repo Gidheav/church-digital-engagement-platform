@@ -122,12 +122,23 @@ const SeriesCard: React.FC<SeriesCardProps> = ({
         {/* Author */}
         {showAuthor && (
           <div className="series-card__author">
-            {series.author.profile_picture && (
+            {series.author.profile_picture ? (
               <img 
                 src={series.author.profile_picture} 
                 alt={series.author.full_name}
                 className="author-avatar"
               />
+            ) : (
+              <div 
+                className="author-avatar author-avatar-initials"
+                title={series.author.full_name}
+              >
+                {(() => {
+                  const parts = series.author.full_name.trim().split(' ').filter(Boolean);
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                })()}
+              </div>
             )}
             <div className="author-info">
               <span className="author-name">{series.author.full_name}</span>

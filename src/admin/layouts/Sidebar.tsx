@@ -38,7 +38,6 @@ const navGroups: NavGroup[] = [
     label: 'Content Pipeline',
     items: [
       { id: 'content', label: 'Posts & Sermons', icon: 'movie', path: '/admin/content', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-      { id: 'daily-words', label: 'Daily Words', icon: 'light_mode', path: '/admin/daily-words', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'series', label: 'Series', icon: 'library_books', path: '/admin/series', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'drafts', label: 'Post Drafts', icon: 'edit_note', path: '/admin/drafts', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'weekly-flow', label: 'Weekly Flow', icon: 'schedule', path: '/admin/weekly-flow', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
@@ -48,7 +47,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Community',
     items: [
-      { id: 'users', label: 'Member Directory', icon: 'groups', path: '/admin/users', roles: [UserRole.ADMIN] },
+      { id: 'users', label: 'User Mgmt', icon: 'groups', path: '/admin/users', roles: [UserRole.ADMIN] },
       { id: 'moderation', label: 'Moderation', icon: 'forum', path: '/admin/moderation', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'small-groups', label: 'Small Groups', icon: 'groups_2', path: '/admin/small-groups', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'prayer-wall', label: 'Prayer Wall', icon: 'volunteer_activism', path: '/admin/prayer-wall', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
@@ -58,6 +57,7 @@ const navGroups: NavGroup[] = [
     label: 'Ministry',
     items: [
       { id: 'events', label: 'Events Calendar', icon: 'event', path: '/admin/events', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+      { id: 'seed', label: 'Seed Manager', icon: 'volunteer_activism', path: '/admin/seed', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { id: 'volunteers', label: 'Volunteers', icon: 'manage_accounts', path: '/admin/volunteers', roles: [UserRole.ADMIN, UserRole.MODERATOR] },
     ],
   },
@@ -167,9 +167,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex items-center gap-2 px-1 pt-1">
-            <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
-              {getUserInitials()}
-            </div>
+            {user?.profilePicture ? (
+              <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 overflow-hidden flex-shrink-0">
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="admin-avatar-img"
+                />
+              </div>
+            ) : (
+              <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                {getUserInitials()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="font-bold text-slate-deep truncate">
                 {user?.firstName} {user?.lastName}

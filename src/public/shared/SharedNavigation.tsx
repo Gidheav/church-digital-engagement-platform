@@ -21,7 +21,7 @@ const MegaMenu = lazy(() =>
 
 interface SharedNavigationProps {
   isScrolled?: boolean;
-  currentPage?: 'home' | 'library' | 'series' | 'practices' | 'connect' | 'events';
+  currentPage?: 'home' | 'library' | 'series' | 'practices' | 'connect' | 'events' | 'bible';
   fullWidth?: boolean; // If true, removes max-width and uses full width
 }
 
@@ -112,6 +112,14 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
           </div>
 
           {/* Navigation Links */}
+          <Link 
+            to="/bible" 
+            className={`font-medium transition-colors ${
+              isActive('bible') ? 'text-primary' : 'text-text-main hover:text-primary'
+            }`}
+          >
+            Open Bible
+          </Link>
           <Link 
             to="/library/series" 
             className={`font-medium transition-colors ${
@@ -222,6 +230,17 @@ const SharedNavigation = memo(({ isScrolled = false, currentPage, fullWidth = tr
               >
                 <Icon name="library_books" size={16} />
                 Library
+              </Link>
+              
+              <Link 
+                to="/bible" 
+                className={`flex items-center gap-3 px-4 py-3 rounded-btn text-base font-medium transition-colors ${
+                  isActive('bible') ? 'bg-primary/10 text-primary' : 'text-text-main hover:bg-accent-sand/20 hover:text-primary'
+                }`}
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <Icon name="menu_book" size={16} />
+                Open Bible
               </Link>
               
               <Link 

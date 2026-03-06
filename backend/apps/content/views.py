@@ -501,9 +501,35 @@ class AdminDailyWordViewSet(viewsets.ModelViewSet):
                     'has_post': post is not None,
                     'status': post.status if post else None,
                     'title': post.title if post else None,
+                    'id': str(post.id) if post else None,
+                    'content': post.content if post else None,
+                    'scripture': post.scripture if post else None,
+                    'prayer': post.prayer if post else None,
                 })
         
         return Response(response_data)
+    
+    @action(detail=False, methods=['get'], url_path='by-date/(?P<date>[^/.]+)')
+    def by_date(self, request, date=None):
+        """Get daily word for specific date (YYYY-MM-DD) - includes drafts"""
+        try:
+            from datetime import datetime
+            lookup_date = datetime.strptime(date, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Invalid date format. Use YYYY-MM-DD'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        post = self.get_queryset().filter(scheduled_date=lookup_date).first()
+        
+        if not post:
+            return Response({
+                'message': f'No daily word found for {date}'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        from .serializers import DailyWordSerializer
+        serializer = DailyWordSerializer(post)
+        return Response(serializer.data)
 
 
 # ============================================================================

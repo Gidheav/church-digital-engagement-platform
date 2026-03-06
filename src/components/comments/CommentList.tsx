@@ -29,7 +29,7 @@ const CommentList: React.FC<CommentListProps> = ({ postId, commentsEnabled = tru
     try {
       setLoading(true);
       setError('');
-      const data = await commentService.getComments(postId);
+      const data = await commentService.getPostComments(postId);
       setComments(data);
     } catch (err: any) {
       console.error('Failed to load comments:', err);

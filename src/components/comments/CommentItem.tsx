@@ -109,7 +109,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             )}
           </div>
           <span className="comment-date">
-            {commentService.formatDate(comment.created_at)}
+            {commentService.formatCommentDate(comment.created_at)}
           </span>
         </div>
 

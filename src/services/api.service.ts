@@ -20,7 +20,7 @@ class ApiService {
     this.client = axios.create({
       baseURL: API_BASE_URL,
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       // withCredentials removed - using JWT tokens only, no cookies needed
     });
@@ -39,6 +39,15 @@ class ApiService {
         if (tokens?.access) {
           config.headers.Authorization = `Bearer ${tokens.access}`;
         }
+
+        const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
+        if (isFormData && config.headers) {
+          delete (config.headers as any)['Content-Type'];
+          delete (config.headers as any)['content-type'];
+        } else if (!isFormData && config.headers && !(config.headers as any)['Content-Type']) {
+          (config.headers as any)['Content-Type'] = 'application/json';
+        }
+
         return config;
       },
       (error) => {

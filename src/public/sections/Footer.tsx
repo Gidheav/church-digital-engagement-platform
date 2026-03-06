@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
+import Icon from '../../components/common/Icon';
 
 /**
  * Footer Component - Lazy loaded to reduce initial bundle size
@@ -17,7 +18,7 @@ const Footer: React.FC<FooterProps> = memo(({ fullWidth = true }) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
             <Link to="/" className="flex items-center gap-3 text-text-main mb-6" aria-label="Serene Sanctuary Home">
-              <span className="material-symbols-outlined text-3xl text-primary" aria-hidden="true">spa</span>
+              <Icon name="spa" size={30} className="text-primary" />
               <span className="font-display font-semibold text-2xl tracking-tight">Serene Sanctuary</span>
             </Link>
             <p className="text-text-muted max-w-sm leading-relaxed text-lg">
@@ -38,7 +39,7 @@ const Footer: React.FC<FooterProps> = memo(({ fullWidth = true }) => {
             <h2 id="footer-contact-heading" className="text-base font-bold uppercase tracking-widest text-text-main mb-6">Contact</h2>
             <ul className="space-y-4 text-lg text-text-muted">
               <li><a href="#" className="hover:text-primary transition-colors">Connect Form</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Giving</a></li>
+              <li><Link to="/giving" className="hover:text-primary transition-colors">Giving</Link></li>
               <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
             </ul>
           </nav>
@@ -53,14 +54,14 @@ const Footer: React.FC<FooterProps> = memo(({ fullWidth = true }) => {
               className="text-text-muted hover:text-primary transition-colors"
               aria-label="Follow us on social media"
             >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">brand_family</span>
+              <Icon name="brand_family" size={22} />
             </a>
             <a 
               href="#" 
               className="text-text-muted hover:text-primary transition-colors"
               aria-label="Subscribe to our RSS feed"
             >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">rss_feed</span>
+              <Icon name="rss_feed" size={22} />
             </a>
           </div>
         </div>

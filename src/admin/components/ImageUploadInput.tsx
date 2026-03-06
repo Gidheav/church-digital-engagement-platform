@@ -47,9 +47,9 @@ const ImageUploadInput: React.FC<Props> = ({ value, onChange, disabled }) => {
           onKeyDown={e => e.key === 'Enter' && inputRef.current?.click()}
         >
           {uploading ? (
-            <><span className='material-symbols-outlined img-upload-icon spin'>progress_activity</span><span className='img-upload-label'>Uploading…</span></>
+            <><Icon name="progress_activity" size={24} color="#3B6E96" className="img-upload-icon spin" /><span className='img-upload-label'>Uploading…</span></>
           ) : (
-            <><span className='material-symbols-outlined img-upload-icon'>add_photo_alternate</span><span className='img-upload-label'>Click or drag image here</span><span className='img-upload-hint'>JPEG, PNG, GIF, WebP · max 10 MB</span></>
+            <><Icon name="add_photo_alternate" size={24} color="#3B6E96" className="img-upload-icon" /><span className='img-upload-label'>Click or drag image here</span><span className='img-upload-hint'>JPEG, PNG, GIF, WebP · max 10 MB</span></>
           )}
         </div>
       )}

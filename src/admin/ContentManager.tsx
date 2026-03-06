@@ -1,5 +1,5 @@
 // ContentManager.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -7,8 +7,9 @@ import { UserRole } from '../types/auth.types';
 import postService, { Post } from '../services/post.service';
 import draftService, { Draft } from '../services/draft.service';
 import Icon from '../components/common/Icon';
-import PostCreate from './PostCreate';
-import PostEdit from './PostEdit';
+// Lazy-loaded — the heavy editor bundle is only fetched/parsed when first opened.
+const PostCreate = lazy(() => import('./PostManagement/PostCreate'));
+const PostEdit   = lazy(() => import('./PostManagement/PostEdit'));
 
 // Icons - Using Icon component
 const PlusIcon = ({ size = 20 }: { size?: number }) => <Icon name="add" size={size} />;
@@ -478,35 +479,48 @@ const ContentManager: React.FC = () => {
 
   const counts = getStatusCounts();
 
+  const editorFallback = (
+    <div className="h-full flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-3 text-slate-400">
+        <div className="w-8 h-8 border-2 border-slate-300 border-t-primary rounded-full animate-spin" />
+        <span className="text-sm font-medium">Loading editor…</span>
+      </div>
+    </div>
+  );
+
   if (viewMode === 'create') {
     return (
-      <div className="h-full overflow-auto bg-slate-50">
-        <PostCreate 
-          key={selectedDraft?.id || 'new'}
-          onSuccess={handleSuccess} 
-          onCancel={handleCancel} 
-          initialData={selectedDraft} 
-        />
+      <div className="h-full overflow-hidden bg-slate-50">
+        <Suspense fallback={editorFallback}>
+          <PostCreate 
+            key={selectedDraft?.id || 'new'}
+            onSuccess={handleSuccess} 
+            onCancel={handleCancel} 
+            initialData={selectedDraft} 
+          />
+        </Suspense>
       </div>
     );
   }
 
   if (viewMode === 'edit' && selectedPost) {
     return (
-      <div className="h-full overflow-auto bg-slate-50">
-        <PostEdit
-          postId={selectedPost.id}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+      <div className="h-full overflow-hidden bg-slate-50">
+        <Suspense fallback={editorFallback}>
+          <PostEdit
+            postId={selectedPost.id}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        </Suspense>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-slate-50">
+    <div className="flex flex-col h-full overflow-hidden bg-transparent">
       {/* Page Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5 flex-shrink-0">
+      <div className="bg-white/40 backdrop-blur-md border-b border-white/20 px-8 py-5 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div>
             <h1 className="text-lg font-black text-slate-900 tracking-tight">
@@ -530,7 +544,7 @@ const ContentManager: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex-shrink-0">
+      <div className="bg-white/40 backdrop-blur-md border-b border-white/20 px-8 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto grid grid-cols-5 gap-4">
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</p>
@@ -564,7 +578,7 @@ const ContentManager: React.FC = () => {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white border-b border-slate-200 px-8 py-3 flex-shrink-0">
+      <div className="bg-white/40 backdrop-blur-md border-b border-white/20 px-8 py-3 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
             {/* Tabs */}

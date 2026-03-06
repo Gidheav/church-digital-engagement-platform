@@ -3,7 +3,7 @@
 .content-manager {
   padding: 20px;
   min-height: 100vh;
-  background: white;
+  background: transparent;
   border-radius: 8px;
 }
 
@@ -31,7 +31,8 @@
 
 /* Post View Styles */
 .post-view-container {
-  background: white;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
   border-radius: 8px;
   padding: 24px;
   max-width: 900px;

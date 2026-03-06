@@ -264,6 +264,17 @@
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--card-border);
+  flex-shrink: 0;
+}
+
+.author-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .author-info {

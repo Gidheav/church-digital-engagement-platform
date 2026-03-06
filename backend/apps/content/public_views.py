@@ -129,11 +129,16 @@ class PublicDailyWordViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DailyWordSerializer
     
     def get_queryset(self):
-        """Only return published devotional posts"""
+        """
+        Only return published devotional posts that are not in the future
+        Published means ready for delivery, but only on/after scheduled_date
+        """
+        today = timezone.now().date()
         return Post.objects.filter(
             content_type__slug='devotional',
             status='PUBLISHED',
-            is_deleted=False
+            is_deleted=False,
+            scheduled_date__lte=today  # Only show today and past devotionals
         ).order_by('-scheduled_date')
     
     @action(detail=False, methods=['get'])
@@ -153,7 +158,10 @@ class PublicDailyWordViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['get'])
     def calendar(self, request):
-        """Get calendar view of daily words for a month"""
+        """
+        Get calendar view of daily words for a month
+        Only shows posts on or after their scheduled date
+        """
         from datetime import date as date_class
         from calendar import monthcalendar
         
@@ -182,11 +190,15 @@ class PublicDailyWordViewSet(viewsets.ReadOnlyModelViewSet):
             'days': []
         }
         
-        # Get all posts for this month
+        # Get current date to filter out future posts
+        today = timezone.now().date()
+        
+        # Get all posts for this month that are not in the future
         posts_dict = {}
         for post in self.get_queryset().filter(
             scheduled_date__year=year,
-            scheduled_date__month=month
+            scheduled_date__month=month,
+            scheduled_date__lte=today  # Only include today and past dates
         ):
             posts_dict[post.scheduled_date] = post
         
@@ -211,7 +223,10 @@ class PublicDailyWordViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='by-date/(?P<date>[^/.]+)')
     def by_date(self, request, date=None):
-        """Get daily word for specific date (YYYY-MM-DD)"""
+        """
+        Get daily word for specific date (YYYY-MM-DD)
+        Only returns published posts on or after their scheduled date
+        """
         try:
             from datetime import datetime
             lookup_date = datetime.strptime(date, '%Y-%m-%d').date()
@@ -219,6 +234,14 @@ class PublicDailyWordViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'error': 'Invalid date format. Use YYYY-MM-DD'
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Prevent access to future daily words
+        # Published means "ready for delivery", not "deliver before scheduled date"
+        today = timezone.now().date()
+        if lookup_date > today:
+            return Response({
+                'message': f'No daily word found for {date}'
+            }, status=status.HTTP_404_NOT_FOUND)
         
         post = self.get_queryset().filter(scheduled_date=lookup_date).first()
         

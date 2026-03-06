@@ -151,9 +151,19 @@ const AdminTopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
               </p>
               <p className="text-xs text-slate-soft uppercase font-semibold mt-0.5">{user?.role}</p>
             </div>
-            <div className="size-8 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
-              {getUserInitials()}
-            </div>
+            {user?.profilePicture ? (
+              <div className="size-8 rounded-lg border border-primary/20 bg-primary/10 overflow-hidden flex-shrink-0">
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="admin-avatar-img"
+                />
+              </div>
+            ) : (
+              <div className="size-8 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                {getUserInitials()}
+              </div>
+            )}
           </button>
           {showUserMenu && (
             <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border-light bg-white shadow-lg z-50">

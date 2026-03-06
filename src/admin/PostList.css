@@ -1,7 +1,8 @@
 /* PostList Styles - Sky Blue Theme, No Emojis */
 
 .post-list-container {
-  background: white;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
   border-radius: 8px;
   padding: 24px;
 }
@@ -86,7 +87,7 @@
 .post-table table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .post-table thead {
@@ -155,7 +156,8 @@
 }
 
 .status-badge.status-scheduled {
-  background: white;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
   color: #87CEEB;
   border: 2px solid #87CEEB;
   font-weight: 700;

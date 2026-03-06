@@ -5,6 +5,7 @@
  */
 
 import React, { memo } from 'react';
+import { MdHelpOutline } from 'react-icons/md';
 import { iconMapping } from './iconMapping';
 
 interface IconProps {
@@ -46,11 +47,10 @@ const Icon = memo<IconProps>(({
   style,
   'data-testid': testId,
 }) => {
-  const IconComponent = iconMapping[name];
+  const IconComponent = iconMapping[name] || MdHelpOutline;
 
-  if (!IconComponent) {
+  if (!iconMapping[name]) {
     console.warn(`Icon name "${name}" not found in icon mapping`);
-    return null;
   }
 
   const sizeValue = typeof size === 'number' ? size : parseInt(size, 10);

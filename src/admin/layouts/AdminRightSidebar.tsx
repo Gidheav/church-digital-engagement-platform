@@ -2,11 +2,11 @@
  * Admin Right Sidebar — Pastoral Priorities, Daily Word, Network Performance
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from '../../components/common/Icon';
+import DailyWordQuickEditor from '../DailyWordQuickEditor';
 
 const AdminRightSidebar: React.FC = () => {
-  const [dailyWord, setDailyWord] = useState('');
 
   return (
     <aside
@@ -46,42 +46,7 @@ const AdminRightSidebar: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Daily Word Editor */}
-      <div className="p-4 space-y-4 border-b border-border-light">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-deep">App: Daily Word</h2>
-          <span className="text-xs font-bold text-emerald-600 uppercase">Live Editor</span>
-        </div>
-        <div className="rounded-lg border border-border-light bg-slate-50 p-3 space-y-3">
-          <div className="flex items-center gap-2">
-            <Icon name="calendar_today" size={18} className=" text-slate-soft" />
-            <span className="text-sm font-bold text-slate-deep">
-              Today,{' '}
-              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-          <textarea
-            className="w-full bg-transparent border-none p-0 text-xs focus:ring-0 focus:outline-none placeholder:text-slate-400 text-slate-deep resize-none h-24 font-medium"
-            placeholder="Enter today's encouragement..."
-            value={dailyWord}
-            onChange={(e) => setDailyWord(e.target.value)}
-          />
-          <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-            <div className="flex gap-2">
-              <button className="text-slate-soft hover:text-primary transition-colors">
-                <Icon name="image" size={14} />
-              </button>
-              <button className="text-slate-soft hover:text-primary transition-colors">
-                <Icon name="link" size={14} />
-              </button>
-            </div>
-            <button className="rounded-md bg-primary px-4 py-1.5 text-xs font-bold text-white uppercase hover:bg-primary/90 shadow-sm transition-colors">
-              Publish
-            </button>
-          </div>
-        </div>
-      </div>
+      <DailyWordQuickEditor />
 
       {/* Network Performance */}
       <div className="mt-auto p-4 bg-slate-50/50 space-y-4">

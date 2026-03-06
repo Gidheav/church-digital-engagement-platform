@@ -48,12 +48,12 @@ class DailyWordModelTests(APITestCase):
             author=self.user,
             content_type=self.devotional_type,
             scheduled_date=today,
-            status=PostStatus.SCHEDULED
+            status=PostStatus.DRAFT
         )
         
         self.assertEqual(post.title, 'Today\'s Devotion')
         self.assertEqual(post.scheduled_date, today)
-        self.assertEqual(post.status, PostStatus.SCHEDULED)
+        self.assertEqual(post.status, PostStatus.DRAFT)
     
     def test_unique_scheduled_date_constraint(self):
         """Test that only one devotional post per date is allowed"""
@@ -66,7 +66,7 @@ class DailyWordModelTests(APITestCase):
             author=self.user,
             content_type=self.devotional_type,
             scheduled_date=today,
-            status=PostStatus.SCHEDULED
+            status=PostStatus.DRAFT
         )
         
         # Attempt to create second post for same date - should raise validation error
@@ -76,7 +76,7 @@ class DailyWordModelTests(APITestCase):
             author=self.user,
             content_type=self.devotional_type,
             scheduled_date=today,
-            status=PostStatus.SCHEDULED
+            status=PostStatus.DRAFT
         )
         
         with self.assertRaises(DjangoValidationError) as context:
@@ -345,7 +345,7 @@ class AdminDailyWordAPITests(APITestCase):
             author=self.admin_user,
             content_type=self.devotional_type,
             scheduled_date=today,
-            status=PostStatus.SCHEDULED
+            status=PostStatus.DRAFT
         )
         
         # Login

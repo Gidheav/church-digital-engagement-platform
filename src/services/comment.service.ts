@@ -2,9 +2,7 @@
  * Comment Service
  * API client for comment operations (public read, authenticated write)
  */
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiService } from './api.service';
 
 export interface CommentUser {
   id: string;
@@ -12,6 +10,7 @@ export interface CommentUser {
   last_name: string;
   email: string;
   role: string;
+  profile_picture?: string;
 }
 
 export interface Comment {
@@ -39,117 +38,67 @@ export interface CreateCommentData {
 }
 
 class CommentService {
-  private api = axios.create({
-    baseURL: API_BASE_URL,
-  });
-
-  constructor() {
-    // Add request interceptor to include JWT token
-    this.api.interceptors.request.use(
-      (config) => {
-        const token = this.getToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  /**
-   * Get JWT access token from localStorage
-   */
-  private getToken(): string | null {
-    const tokensStr = localStorage.getItem('auth_tokens');
-    if (!tokensStr) return null;
-
-    try {
-      const tokens = JSON.parse(tokensStr);
-      return tokens?.access || null;
-    } catch {
-      return null;
-    }
-  }
-
   /**
    * Get all comments for a post (public - no auth required)
    */
-  async getComments(postId: string): Promise<Comment[]> {
-    const response = await this.api.get(`/public/comments/`, {
-      params: { post_id: postId }
-    });
+  async getPostComments(postId: string): Promise<Comment[]> {
+    const response = await apiService.get(`/public/comments/?post_id=${postId}`);
     // Handle both paginated and non-paginated responses
-    if (response.data && Array.isArray(response.data.results)) {
-      return response.data.results;
+    if (response && Array.isArray(response.results)) {
+      return response.results;
     }
-    return Array.isArray(response.data) ? response.data : [];
+    return Array.isArray(response) ? response : [];
   }
 
   /**
    * Create a new comment (authenticated members only)
    */
   async createComment(data: CreateCommentData): Promise<Comment> {
-    const response = await this.api.post<Comment>('/comments/', data);
-    return response.data;
+    return await apiService.post('/comments/', data);
   }
 
   /**
    * Reply to a comment (authenticated members only)
    */
   async replyToComment(parentId: string, content: string, postId: string, isQuestion?: boolean): Promise<Comment> {
-    const response = await this.api.post<Comment>(`/comments/${parentId}/reply/`, {
+    return await apiService.post(`/comments/${parentId}/reply/`, {
       content,
       post: postId,
       is_question: isQuestion || false
     });
-    return response.data;
   }
 
   /**
    * Delete a comment (admin only)
    */
   async deleteComment(commentId: string): Promise<void> {
-    await this.api.delete(`/admin/comments/${commentId}/`);
+    await apiService.delete(`/admin/comments/${commentId}/`);
   }
 
   /**
    * Restore a deleted comment (admin only)
    */
   async restoreComment(commentId: string): Promise<Comment> {
-    const response = await this.api.patch<Comment>(`/admin/comments/${commentId}/restore/`);
-    return response.data;
+    return await apiService.patch(`/admin/comments/${commentId}/restore/`);
   }
 
   /**
-   * Format date for display
+   * Format comment date for display
    */
-  formatDate(dateString: string): string {
+  formatCommentDate(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (days > 7) {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-      });
-    } else if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
-    }
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   /**
@@ -159,6 +108,14 @@ class CommentService {
     const first = user.first_name?.charAt(0) || '';
     const last = user.last_name?.charAt(0) || '';
     return (first + last).toUpperCase() || user.email.charAt(0).toUpperCase();
+  }
+
+  /**
+   * Get user full name
+   */
+  getUserFullName(user: CommentUser): string {
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    return fullName || user.email.split('@')[0];
   }
 }
 

@@ -203,6 +203,13 @@
   text-overflow: ellipsis;
 }
 
+.admin-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 /* Dropdown Container */
 .topbar-dropdown {
   position: relative;

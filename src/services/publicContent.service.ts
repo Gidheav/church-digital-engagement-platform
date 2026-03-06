@@ -33,6 +33,7 @@ export interface PublicPost {
   views_count: number;
   comments_count: number;
   reactions_count: number;
+  comments_enabled?: boolean;
   series_title?: string;
   series_order?: number;
   category?: string;

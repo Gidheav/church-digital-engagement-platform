@@ -72,6 +72,25 @@ class DailyWordService {
   }
 
   /**
+   * Get calendar view for a month (admin - includes drafts)
+   */
+  async getCalendarAdmin(month: number, year: number): Promise<CalendarResponse> {
+    const response = await this.api.get('/admin/content/daily-words/calendar/', {
+      params: { month, year }
+    });
+    return response.data;
+  }
+
+  /**
+   * Get daily word for a specific date (admin - includes drafts)
+   */
+  async getByDateAdmin(date: string): Promise<DailyWord> {
+    // date format: YYYY-MM-DD
+    const response = await this.api.get(`/admin/content/daily-words/by-date/${date}/`);
+    return response.data;
+  }
+
+  /**
    * Create a new daily word (admin only)
    */
   async create(data: DailyWordCreateRequest): Promise<DailyWord | DailyWordConflict> {
