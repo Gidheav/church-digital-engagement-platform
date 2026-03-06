@@ -16,7 +16,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'id', 'user', 'user_email', 'user_name', 'action_type',
             'description', 'ip_address', 'user_agent', 'metadata', 'created_at'
         ]
-        read_only_fields = '__all__'
+        read_only_fields = [
+            'id', 'user', 'user_email', 'user_name', 'action_type',
+            'description', 'ip_address', 'user_agent', 'metadata', 'created_at'
+        ]
 
 
 class ReportSerializer(serializers.ModelSerializer):

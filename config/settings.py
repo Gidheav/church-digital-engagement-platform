@@ -53,6 +53,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'payments': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
@@ -88,6 +93,8 @@ INSTALLED_APPS = [
     'apps.email_campaigns',
     'apps.moderation',
     'apps.series',
+    'apps.bible',
+    'apps.payments',
 ]
 
 MIDDLEWARE = [
@@ -200,7 +207,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -398,6 +405,39 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Celery Beat Schedule for periodic tasks
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Clean up expired payment intents every hour
+    'cleanup-expired-intents': {
+        'task': 'payments.cleanup_expired_intents',
+        'schedule': crontab(minute=0),  # Every hour at :00
+    },
+    # Verify pending transactions every 10 minutes (webhook failure safety net)
+    'verify-pending-transactions': {
+        'task': 'payments.verify_pending_transactions',
+        'schedule': crontab(minute='*/10'),  # Every 10 minutes
+    },
+    # Check for critical payment errors every 15 minutes
+    'check-critical-errors': {
+        'task': 'payments.check_critical_errors',
+        'schedule': crontab(minute='*/15'),  # Every 15 minutes
+    },
+}
+
+# ==============================================================================
+# CACHING CONFIGURATION
+# ==============================================================================
+
+CACHES = {
+    "default": {
+        "BACKEND":  "django_redis.cache.RedisCache",
+        "LOCATION": config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        "OPTIONS":  {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        "TIMEOUT":  60 * 60 * 24 * 365,  # 365 days
+    }
+}
 
 # ==============================================================================
 # SECURITY SETTINGS (Development & Dev Tunnels)

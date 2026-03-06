@@ -2,6 +2,8 @@
 Views for serving the React frontend application.
 """
 from django.views.generic import TemplateView
+from django.conf import settings
+import os
 
 
 class ReactAppView(TemplateView):
@@ -13,3 +15,8 @@ class ReactAppView(TemplateView):
     API route will be forwarded to React's index.html.
     """
     template_name = 'index.html'
+    
+    def get_template_names(self):
+        """Explicitly tell Django where to find index.html"""
+        # First try the default template loading
+        return ['index.html']
