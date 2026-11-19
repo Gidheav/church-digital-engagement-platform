@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://church-digital-engagement-platform.onrender.com/api/:path*"
+      "destination": "https://church-digital-engagement-platform-2q9v.onrender.com/api/:path*"
     },
     {
       "source": "/((?!static|favicon|manifest|logo|robots|asset-manifest).*)",

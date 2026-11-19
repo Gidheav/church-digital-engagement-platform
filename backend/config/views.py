@@ -3,6 +3,7 @@ Views for serving the React frontend application and health check.
 """
 from django.views.generic import TemplateView
 from django.http import JsonResponse
+from django.template.exceptions import TemplateDoesNotExist
 from django.conf import settings
 import os
 
@@ -16,13 +17,18 @@ class ReactAppView(TemplateView):
     """
     Serves the React application's index.html for all non-API routes.
     
-    This view enables React Router to handle client-side routing while
-    Django serves the API endpoints. All requests that don't match an
-    API route will be forwarded to React's index.html.
+    If index.html does not exist (e.g. standalone API deployment with frontend
+    on Vercel), returns a clean API status JSON with HTTP 200 instead of 500.
     """
     template_name = 'index.html'
     
-    def get_template_names(self):
-        """Explicitly tell Django where to find index.html"""
-        # First try the default template loading
-        return ['index.html']
+    def get(self, request, *args, **kwargs):
+        try:
+            return super().get(request, *args, **kwargs)
+        except TemplateDoesNotExist:
+            return JsonResponse({
+                "status": "online",
+                "service": "Church Digital Engagement Platform API",
+                "health": "/api/v1/health/",
+                "docs": "/api/v1/docs/"
+            }, status=200)

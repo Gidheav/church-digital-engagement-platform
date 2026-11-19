@@ -371,7 +371,8 @@ DEFAULT_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'https://g98l5wj0-3000.uks1.devtunnels.ms',  # React Dev Tunnel
     'https://g98l5wj0-8000.uks1.devtunnels.ms',  # Django Dev Tunnel (for cross-origin)
-    'https://church-digital-engagement-platform.onrender.com',  # Production on Render
+    'https://church-digital-engagement-platform.onrender.com',
+    'https://church-digital-engagement-platform-2q9v.onrender.com',  # Live Render domain
 ]
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
