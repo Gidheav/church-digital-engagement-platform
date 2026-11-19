@@ -32,7 +32,6 @@ import ForgotPasswordPage from '../public/ForgotPasswordPage';
 import SeriesSubscriptionVerifyPage from '../public/SeriesSubscriptionVerifyPage';
 import SeriesSubscriptionUnsubscribePage from '../public/SeriesSubscriptionUnsubscribePage';
 import AdminAuth from '../pages/AdminAuth';
-import DebugAuth from '../pages/DebugAuth';
 import Forbidden from '../pages/Forbidden';
 import VerifyEmail from '../pages/VerifyEmail';
 import DailyWordDetailPage from '../public/DailyWordDetailPage';
@@ -197,8 +196,6 @@ const AppRouter: React.FC = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        {/* TODO: remove after auth debugging */}
-        <Route path="/debug-auth" element={<DebugAuth />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/series-subscriptions/verify" element={<SeriesSubscriptionVerifyPage />} />
         <Route path="/series-subscriptions/unsubscribe" element={<SeriesSubscriptionUnsubscribePage />} />
