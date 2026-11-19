@@ -1,27 +1,50 @@
-@"
+# ==========================
+# Environment & Secrets
+# ==========================
+.env
+.env.local
+.env.production
+
+# ==========================
+# Python
+# ==========================
 venv/
 env/
-node_modules/
-build/
-dist/
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.log
+
+# ==========================
+# Node / Frontend
+# ==========================
+node_modules/
+build/
+dist/
+package-lock.json
+
+# ==========================
+# Database
+# ==========================
 *.sqlite3
 db.sqlite3
-media/
-.env
-.env.local
-.env.production
 *.rdb
+
+# ==========================
+# OS Files
+# ==========================
 .DS_Store
 Thumbs.db
-"@ | Out-File -FilePath .gitignore -Encoding utf8
 
+# ==========================
+# Logs & Media
+# ==========================
+*.log
+media/
 
-
+# ==========================
+# Android / Gradle
+# ==========================
 ChurchApp-Android/
 app/
 build.gradle.kts
@@ -34,3 +57,89 @@ settings.gradle.kts
 .idea/
 gradle.properties
 .gradle/
+
+# ==========================
+# IDE & Editor
+# ==========================
+.vscode/
+.vs/
+*.code-workspace
+
+# ==========================
+# Agent Config
+# ==========================
+.github/agents/
+
+# ==========================
+# Root — Test & Debug Files
+# ==========================
+response.json
+Skill.md
+UI Skill
+test-api.js
+test_405.ps1
+verify_postgresql.ps1
+tsconfig.json
+tailwind.config.js
+
+# ==========================
+# Root — Internal Docs & Specs
+# ==========================
+/ANALYTICS_IMPLEMENTATION.md
+/Bible_Module_Engineering_Spec.docx
+/Default Book Cover.png
+/docker-compose.yml
+/Dockerfile
+/homepage.html
+/instruction.md
+/migrate_to_postgresql.bat
+/RBAC_IMPLEMENTATION.md
+/check_hero_sections.py
+/nginx.conf
+Design/
+
+# ==========================
+# Migration Data
+# ==========================
+migration_data/
+
+# ==========================
+# Backend — Temp Debug Scripts
+# ==========================
+backend/.tmp_*
+
+# ==========================
+# Backend — Test & Debug Output
+# ==========================
+backend/test.md
+backend/test_output.txt
+backend/debug.md
+backend/debug_405.html
+backend/check.md
+
+# ==========================
+# Backend — Dev Docs & Notes
+# ==========================
+backend/create.md
+backend/ANALYTICS_SETUP.md
+
+# ==========================
+# Backend — Standalone Dev Scripts
+# ==========================
+backend/export_bible_static.py
+backend/init_paystack_payment.py
+backend/monitor_celery.py
+backend/sync_responses.py
+backend/validate_bank_account.py
+backend/start_services.ps1
+
+# ==========================
+# Backend — Test Data
+# ==========================
+backend/data/test_kjv.json
+
+# ==========================
+# Frontend — Test & Debug
+# ==========================
+public/test-*
+src/pages/Debug*
