@@ -1,4 +1,4 @@
-# ==========================
+ï»¿# ==========================
 # Environment & Secrets
 # ==========================
 .env
@@ -71,7 +71,7 @@ gradle.properties
 .github/agents/
 
 # ==========================
-# Root — Test & Debug Files
+# Root â€” Test & Debug Files
 # ==========================
 response.json
 Skill.md
@@ -79,11 +79,9 @@ UI Skill
 test-api.js
 test_405.ps1
 verify_postgresql.ps1
-tsconfig.json
-tailwind.config.js
 
 # ==========================
-# Root — Internal Docs & Specs
+# Root â€” Internal Docs & Specs
 # ==========================
 /ANALYTICS_IMPLEMENTATION.md
 /Bible_Module_Engineering_Spec.docx
@@ -104,12 +102,12 @@ Design/
 migration_data/
 
 # ==========================
-# Backend — Temp Debug Scripts
+# Backend â€” Temp Debug Scripts
 # ==========================
 backend/.tmp_*
 
 # ==========================
-# Backend — Test & Debug Output
+# Backend â€” Test & Debug Output
 # ==========================
 backend/test.md
 backend/test_output.txt
@@ -118,13 +116,13 @@ backend/debug_405.html
 backend/check.md
 
 # ==========================
-# Backend — Dev Docs & Notes
+# Backend â€” Dev Docs & Notes
 # ==========================
 backend/create.md
 backend/ANALYTICS_SETUP.md
 
 # ==========================
-# Backend — Standalone Dev Scripts
+# Backend â€” Standalone Dev Scripts
 # ==========================
 backend/export_bible_static.py
 backend/init_paystack_payment.py
@@ -134,12 +132,12 @@ backend/validate_bank_account.py
 backend/start_services.ps1
 
 # ==========================
-# Backend — Test Data
+# Backend â€” Test Data
 # ==========================
 backend/data/test_kjv.json
 
 # ==========================
-# Frontend — Test & Debug
+# Frontend â€” Test & Debug
 # ==========================
 public/test-*
 src/pages/Debug*

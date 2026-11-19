@@ -740,6 +740,7 @@ PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='')
 PAYSTACK_WEBHOOK_SECRET = config('PAYSTACK_WEBHOOK_SECRET', default='')
 
 
+
 # ==============================================================================
 # DEFAULT FIELD TYPE
 # ==============================================================================
