@@ -20,10 +20,13 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from .views import ReactAppView
+from .views import ReactAppView, health_check
 from apps.users.test_views import TestVerificationView  # Senior Engineer debug endpoint
 
 urlpatterns = [
+    # Health check (used by Render, uptime monitors)
+    path('api/v1/health/', health_check, name='health-check'),
+
     # Django Admin (moved to /django-admin/ to avoid conflict with React /admin/ routes)
     path('django-admin/', admin.site.urls),
 

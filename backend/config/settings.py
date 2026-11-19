@@ -27,8 +27,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
+def _parse_bool(val, default=False):
+    if val is None or val == '':
+        return default
+    if isinstance(val, bool):
+        return val
+    return str(val).strip().lower() in ('1', 'true', 't', 'yes', 'y')
+
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _parse_bool(config('DEBUG', default='False'))
 
 # Enable detailed error logging
 LOGGING = {
@@ -82,8 +89,7 @@ LOGGING = {
     },
 }
 
-#ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 
 # ==============================================================================
@@ -130,9 +136,9 @@ INSTALLED_APPS = _INSTALLED_APPS + [
     'apps.giving',
     'apps.payouts',
     'apps.notifications',
-    'apps.email',  # Standalone email service
-    'apps.analytics',  # Analytics and visitor tracking
-    'apps.contact',  # Contact form and inbox
+    'apps.email',
+    'apps.analytics',
+    'apps.contact',
 ]
 
 MIDDLEWARE = [
@@ -470,13 +476,13 @@ else:
     print(f"[SETTINGS] WARNING: .env file not found at: {env_path}")
 
 # FORCE SMTP BACKEND - NO CONDITIONALS
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'www.heavresearcher.247@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')  # Must be set via environment variable
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Church Digital Platform <www.heavresearcher.247@gmail.com>')
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='')
 EMAIL_TIMEOUT = 30
 
 # ==============================================================================
@@ -665,8 +671,7 @@ CACHES = {
 # SECURITY SETTINGS (Development & Dev Tunnels)
 # ==============================================================================
 
-# Security settings - Development only
-# Disable ALL HTTPS/SSL redirects in development
+# Security defaults (overridden below when DEBUG=False)
 SECURE_SSL_REDIRECT = False
 SECURE_PROXY_SSL_HEADER = None
 SECURE_HSTS_SECONDS = 0
@@ -679,8 +684,8 @@ SECURE_HSTS_PRELOAD = False
 # ==============================================================================
 
 if not DEBUG:
-    # HTTPS settings
     SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -688,8 +693,6 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    
-    # Additional security headers
     X_FRAME_OPTIONS = 'DENY'
 
 

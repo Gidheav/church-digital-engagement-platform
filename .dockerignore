@@ -1,5 +1,79 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (installed fresh inside container)
 venv
 node_modules
+
+# Python cache
 *.pyc
 __pycache__
-.git
+*.pyo
+
+# Environment files (secrets must not be baked into images)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Build artifacts
+build
+dist
+
+# IDE and editor
+.vscode
+.vs
+.idea
+*.code-workspace
+
+# Android / mobile (not part of web deployment)
+app
+mobile
+.gradle
+gradle
+gradlew
+gradlew.bat
+local.properties
+settings.gradle.kts
+build.gradle.kts
+gradle.properties
+*.iml
+
+# Design assets and documentation
+Design
+migration_data
+backups
+*.docx
+*.png
+*.md
+!README.md
+
+# Test and debug files
+test-api.js
+test_405.ps1
+verify_postgresql.ps1
+check_hero_sections.py
+response.json
+homepage.html
+
+# Backend temp scripts
+backend/.tmp_*
+backend/test.md
+backend/debug.md
+backend/check.md
+backend/create.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database files
+*.sqlite3
+*.rdb
+
+# GitHub
+.github

@@ -1,9 +1,15 @@
 """
-Views for serving the React frontend application.
+Views for serving the React frontend application and health check.
 """
 from django.views.generic import TemplateView
+from django.http import JsonResponse
 from django.conf import settings
 import os
+
+
+def health_check(request):
+    """Lightweight health check endpoint for Render and uptime monitors."""
+    return JsonResponse({"status": "ok"}, status=200)
 
 
 class ReactAppView(TemplateView):

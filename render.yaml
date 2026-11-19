@@ -1,0 +1,46 @@
+# ============================================================================
+# Render Infrastructure-as-Code (render.yaml)
+# ============================================================================
+# This defines the services Render should create when you connect this repo.
+# Go to: Render Dashboard > New > Blueprint > Connect this repo
+#
+# NOTE: You still need to add environment variables manually in Render's
+#       dashboard (secrets cannot go in this file).
+
+services:
+  # --- Django API Backend ---
+  - type: web
+    name: church-platform-api
+    runtime: python
+    region: frankfurt  # EU — matches Supabase Europe region for low latency
+    plan: starter      # $7/mo — upgrade to Standard for production traffic
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 2 --worker-tmp-dir /dev/shm --log-level info --access-logfile - --error-logfile -
+    healthCheckPath: /api/v1/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: DEBUG
+        value: "False"
+      # All secrets (SECRET_KEY, DATABASE_URL, etc.) should be added
+      # manually in Render's Environment tab — not here.
+
+  # --- Celery Worker (Background Tasks) ---
+  - type: worker
+    name: church-platform-worker
+    runtime: python
+    region: frankfurt  # Must match web service region
+    plan: starter
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && celery -A config worker --loglevel=info --concurrency=4
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: PYTHONPATH
+        value: /opt/render/project/src
