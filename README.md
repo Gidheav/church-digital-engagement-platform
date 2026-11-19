@@ -1,1198 +1,730 @@
 # Church Digital Engagement Platform
 
-> A complete digital home for your church community — where congregation members connect, content is delivered, and church staff manage everything from one place.
+A production-grade, full-stack web application for churches and faith-based organizations. Built to consolidate sermon publishing, member engagement, payment processing, email campaigns, and administrative operations into a single self-hosted platform.
 
-[![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://church-digital-engagement-platform.onrender.com)
+[![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://github.com/Gidheav/church-digital-engagement-platform)
 [![Backend](https://img.shields.io/badge/backend-Django%205%20%2B%20DRF-092E20)](https://www.djangoproject.com/)
 [![Frontend](https://img.shields.io/badge/frontend-React%2018%20%2B%20TypeScript-61DAFB)](https://react.dev/)
-[![Real-Time](https://img.shields.io/badge/real--time-WebSocket%20%2B%20Channels-blue)](https://channels.readthedocs.io/)
-[![Payments](https://img.shields.io/badge/payments-Paystack%20Integration-blueviolet)](https://paystack.com/)
-
----
-
-## What Is This?
-
-The **Church Digital Engagement Platform** is a production-grade, full-stack web application purpose-built for churches and faith-based organizations. It provides a single, unified digital space where:
-
-- **Congregation Members** browse sermons, articles, devotionals, announcements, and events anytime, anywhere
-- **Registered Members** connect with the community through reactions, comments, questions, and discussions
-- **Church Staff** create and publish rich content with scheduling, drafting, and media management
-- **Administrators** manage the entire platform — users, permissions, content, payments, and campaigns
-- **Leadership** receives real-time notifications, audit trails, and detailed analytics
-- **Donors** give securely through integrated payment processing
-
-Whether you are a congregation member, church staff, or developer — this README has everything you need.
+[![Database](https://img.shields.io/badge/database-PostgreSQL%2016-336791)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/license-proprietary-lightgrey)]()
 
 ---
 
 ## Table of Contents
 
-### 🙋 For Everyone
-1. [Quick Start by Role](#1-quick-start-by-role)
-2. [Who Is This For?](#2-who-is-this-for)
-3. [What Can You Do? (Features)](#3-what-can-you-do-features)
-
-### 🔐 Platform Details
-4. [User Roles & Permissions](#4-user-roles--permissions)
-5. [Platform Walkthrough](#5-platform-walkthrough)
-6. [Real-Time Notifications](#6-real-time-notifications)
-7. [Payment Processing](#7-payment-processing)
-
-### 🔧 For Developers
-8. [Technology Overview](#8-technology-overview)
-9. [Project Structure](#9-project-structure)
-10. [Getting Started (Development & Deployment)](#10-getting-started)
-11. [Environment Variables](#11-environment-variables)
-12. [API Reference](#12-api-reference)
-13. [Deployment](#13-deployment)
-14. [Design Principles](#14-design-principles)
-
-### 📚 Reference
-15. [Project Status & Roadmap](#15-project-status--roadmap)
-16. [Security](#16-security)
-17. [Contributing](#17-contributing)
-18. [License](#18-license)
+- [Problem Statement](#problem-statement)
+- [Solution Overview](#solution-overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Core Modules](#core-modules)
+- [Role-Based Access Control](#role-based-access-control)
+- [Payment Processing Pipeline](#payment-processing-pipeline)
+- [Real-Time Notification System](#real-time-notification-system)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Configuration](#environment-configuration)
+- [API Reference](#api-reference)
+- [Deployment](#deployment)
+- [Security Model](#security-model)
+- [Design Decisions](#design-decisions)
+- [Project Status and Roadmap](#project-status-and-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 1. Quick Start by Role
+## Problem Statement
 
-### 👤 I'm a Congregation Member or Visitor
-**Goal:** Browse sermons and announcements
+Most churches rely on a patchwork of disconnected tools for different operational needs: a website builder for the public site, a third-party platform for sermon hosting, a separate email marketing service, manual spreadsheets for member management, and yet another tool for collecting donations. This fragmentation creates three concrete problems:
 
-1. Go to the **Home page** (`/`) — you don't need an account
-2. Browse **Sermons** in the Library
-3. Click on any sermon to read, listen, or watch
-4. Want to comment or react? **Register** (free) at `/register`
-5. After registration, verify your email and you're in the community!
+1. **Data silos.** Member activity, giving history, content engagement, and communication preferences live in separate systems with no shared context. A pastor cannot see which members watched last Sunday's sermon, donated this month, and also unsubscribed from the newsletter, because that information lives in three different dashboards.
 
-**Key URLs:**
-- 📖 Library (Browse content): `/library`
-- 🎬 Sermon Series: `/library/series`
-- 📅 Events: `/events`
-- 🤝 Ministries: `/connect`
+2. **Operational overhead.** Staff context-switch between platforms constantly. Publishing a sermon involves uploading to one service, linking it on the website through another, sending a notification email through a third, and manually updating an internal spreadsheet. Each handoff introduces delay and human error.
+
+3. **Limited engagement visibility.** Without a unified data model, churches have no way to measure real engagement across content, community interactions, and financial contributions. They cannot answer basic questions like "which content types drive the most member activity" or "what percentage of active commenters are also donors."
 
 ---
 
-### 🙋 I'm a Registered Member
-**Goal:** Interact with the community
+## Solution Overview
 
-1. **Log in** at `/login` with your email and password
-2. Go to your **Member Dashboard** (`/member`)
-3. Check your profile, notification preferences, and activity
-4. Browse the **Sermon Library** and **comment** on content
-5. **React** to posts (Like, Amen, Love, Insight, Praise)
-6. **Ask questions** and engage in the community discussion
-7. **Manage your notification settings** — choose what you get emailed about
+This platform eliminates those silos by consolidating everything into one application with a shared data model, a single authentication layer, and a unified admin interface.
 
-**Coming Soon (Member Side):**
-- Small group discussions
-- Prayer wall
-- Event registration
-- Community messaging
+**What it replaces:**
+- WordPress/Squarespace (public website + content management)
+- Subsplash/Church Online Platform (sermon hosting + streaming)
+- Mailchimp/SendGrid (email campaigns + subscriber management)
+- Paystack/Stripe dashboards (donation management)
+- Google Sheets (member tracking)
 
----
+**What it delivers:**
+- A public-facing website with sermon library, series organization, event listings, and ministry pages, accessible without authentication
+- A member portal with personalized dashboards, comment threads, reaction system, Q&A, and notification preferences
+- A content management system with rich-text editing, draft auto-save, scheduled publishing, and media upload
+- An admin dashboard with user management, content moderation, email campaigns, audit logging, and analytics
+- Integrated payment processing with fraud detection, webhook verification, and full audit trails
+- Real-time WebSocket notifications with automatic REST fallback
+- A Bible module with offline-first cached access
+- A contact form system with admin inbox
+- Visitor analytics with device fingerprinting and page-view tracking
 
-### 👨‍💼 I'm Church Staff / Content Creator
-**Goal:** Publish sermons, articles, and announcements
-
-1. **Log in** at `/admin-auth` with your staff account
-2. Go to **Admin Dashboard** (`/admin`)
-3. Click **Posts & Sermons** or **Content** to start creating
-4. Use the **rich-text editor** to write your post
-5. Add a title, description, featured image, and media (audio/video)
-6. **Save as Draft** (auto-saves every 30 seconds)
-7. **Publish immediately** or **Schedule for later** (choose a future date/time)
-8. **Organize series** — group related sermons together
-9. **Moderate comments** — review, respond to, or delete comments
-10. View **engagement metrics** on your dashboard
-
-**Key Admin Sections:**
-- 📝 Posts & Sermons (`/admin/content`)
-- 📚 Sermon Series (`/admin/series`)
-- 📋 Drafts (`/admin/drafts`)
-- 💬 Moderation (`/admin/moderation`)
-- 📊 Dashboard (`/admin`)
+The entire stack ships as a Docker Compose deployment: one command to build, one command to start. No vendor lock-in, no recurring SaaS fees beyond hosting.
 
 ---
 
-### 🔑 I'm an Administrator
-**Goal:** Manage the entire platform
+## Architecture
 
-1. **Log in** at `/admin-auth` with your admin account
-2. Go to **Admin Dashboard** (`/admin`) — you have access to everything
-3. **Member Directory** — add, remove, promote, or suspend users
-4. **Content Management** — manage all posts, series, and drafts
-5. **Email Campaigns** — create newsletters and send to specific groups
-6. **Settings** — customize content types, email templates, platform settings
-7. **Audit Log** — see every action taken (who published, who changed what)
-8. **Reports & Analytics** — engagement stats, member growth, content performance
+```
+                                  Client Requests
+                                        |
+                                   [ Nginx ]
+                                   /        \
+                            Static/Media    Dynamic
+                            (cached)        Requests
+                                              |
+                                        [ Daphne/Gunicorn ]
+                                        Django 5 + DRF
+                                       /      |      \
+                              REST API    WebSocket    Celery Tasks
+                                |         Channels     (async email,
+                                |            |          scheduling)
+                                |            |              |
+                            [ PostgreSQL ]  [ Redis ]  [ Redis ]
+                              Primary DB    Pub/Sub     Broker
+                                            + Cache
+```
 
-**Admin-Only Features:**
-- 👥 Member Directory & User Management (`/admin/users`)
-- 📧 Email Campaigns (`/admin/email`)
-- ⚙️ Platform Settings (`/admin/settings`)
-- 📊 Reports & Analytics (`/admin/reports`)
-- 🔍 Audit Log (`/admin/audit`)
+**Request flow:**
 
----
-
-### 💻 I'm a Developer
-**Goal:** Set up and extend the platform
-
-1. **Start here:** [Getting Started (Development)](#10-getting-started)
-2. Read [Technology Overview](#8-technology-overview) to understand the stack
-3. Explore the [API Reference](#12-api-reference) at `http://localhost:8000/api/v1/docs/`
-4. Check [Contributing](#17-contributing) for coding standards
-5. Deploy using [Deployment Guide](#13-deployment)
-
----
-
-## 2. Who Is This For?
-
-| Who | What They Get |
-|---|---|
-| **Congregation Members / Visitors** | A free, easy way to engage with church content, sermons, events, and community — no tech skills needed |
-| **Registered Members** | A personalized experience with comments, reactions, discussions, notifications, and profile management |
-| **Church Staff / Content Creators** | A professional, modern publishing platform with scheduling, drafts, analytics, and media management |
-| **Church Administrators** | Complete control — user management, permissions, campaigns, settings, audit logs, and analytics |
-| **Church Leadership** | Real-time notifications, member engagement metrics, content performance data, and audit trails |
-| **Donors / Contributors** | A secure way to give financially through integrated payment processing with fraud protection |
-| **UI/UX Designers** | Enterprise-grade admin UI (comparable to Stripe/Vercel quality) and professional public pages |
-| **Frontend Developers** | Modern stack (React 18, TypeScript, Tailwind CSS, React Router, Axios) with role-aware routing |
-| **Backend Developers** | Clean architecture (Django 5 REST API, JWT auth, PostgreSQL, Celery, WebSocket channels, audit logging) |
-| **DevOps Engineers** | Production-ready Docker Compose stack with Nginx, multi-stage builds, Redis, and health checks |
+1. Nginx terminates SSL, serves static assets (30-day cache) and media files (7-day cache) directly, and proxies everything else upstream to Django.
+2. Django runs behind Daphne (ASGI) in Docker Compose for WebSocket support, or Gunicorn (WSGI, 4 workers + 2 threads each) for HTTP-only deployments.
+3. The React frontend is built at Docker image build time (multi-stage), collected into Django's static files via Whitenoise, and served as a single-page application. All non-API routes fall through to `ReactAppView`, which serves `index.html` for client-side routing.
+4. Background work (email delivery, scheduled content publishing, maintenance) is offloaded to Celery workers backed by Redis as the message broker.
+5. Real-time notifications are pushed through Django Channels over WebSocket. If the connection drops, the client falls back to polling the REST notification endpoint.
 
 ---
 
-## 3. What Can You Do? (Features)
+## Tech Stack
 
-### 📖 Content Discovery (Anyone, No Login Required)
+### Frontend (320 TypeScript/TSX source files)
 
-- ✅ Browse all public **sermons, articles, devotionals, and announcements**
-- ✅ Explore **sermon series** with organized, sequential content  
-- ✅ View **upcoming events** with date, time, location, and capacity
-- ✅ Discover **ministry groups and service teams**
-- ✅ **Search and filter** content by topic, speaker, date, or type
-
-### 💬 Community Engagement (Registered Members)
-
-- ✅ **React to content** with 5 emoji reactions: Like ❤️, Amen 🙏, Love 💕, Insight 💡, Praise 🎉
-- ✅ **Comment and reply** in threaded discussions under any post
-- ✅ **Ask questions** that church staff can answer publicly
-- ✅ **Receive answers** directly from moderators and staff
-- ✅ **View member activity** — see what's happening in your community
-- ✅ **Manage preferences** — control which notifications you receive and how
-
-### 📝 Content Creation & Publishing (Church Staff +)
-
-- ✅ **Rich-text editor** — write, format, add links, embed media (audio, video, images)
-- ✅ **Draft management** — save work and come back later (auto-saves every 30 seconds)
-- ✅ **Schedule publishing** — plan content to go live at specific dates/times
-- ✅ **Sermon series** — organize related posts in sequential order
-- ✅ **Media support** — upload images, add audio URLs, embed videos, featured images
-- ✅ **Custom content types** — create new categories beyond built-in types
-- ✅ **View engagement** — see reactions, comments, questions on your content
-- ✅ **Publish immediately** or **queue for review** before going live
-
-### 🛡️ Moderation & Community Management (Moderators +)
-
-- ✅ **Moderate comments** — review, approve, edit, or delete comments
-- ✅ **Manage Q&A** — answer questions publicly, mark as resolved
-- ✅ **Review reports** — see flagged content and take action
-- ✅ **Moderation dashboard** — queue of items waiting for review
-- ✅ **Action audit trail** — see who moderated what and when
-
-### 👥 User Management (Admins Only)
-
-- ✅ **Member directory** — view all users, search by name/email
-- ✅ **Change roles** — promote members to moderator or staff
-- ✅ **Suspend accounts** — temporarily or permanently restrict access
-- ✅ **Export data** — bulk export member information
-- ✅ **Email verification** — ensure members verify email on signup
-- ✅ **Activity tracking** — see member login history and engagement
-
-### 📧 Email & Communication (Admins Only)
-
-- ✅ **Email campaigns** — draft and send newsletters to all members or specific groups
-- ✅ **Campaign templates** — save templates for recurring campaigns
-- ✅ **Subscription management** — members can opt-in/out of emails
-- ✅ **Delivery tracking** — see open rates, bounces, and engagement
-- ✅ **Scheduled sending** — send campaigns at optimal times
-
-### 💰 Payment Processing (Donors + Admins)
-
-- ✅ **Secure donations** — members can donate through Paystack
-- ✅ **Multiple amounts** — offer preset or custom donation amounts
-- ✅ **Payment verification** — backend verifies all transactions with Paystack
-- ✅ **Fraud detection** — automatic fraud prevention and rate limiting
-- ✅ **Payment history** — donors see their transaction history
-- ✅ **Instant notifications** — real-time notifications to donors and admins
-- ✅ **Audit logging** — complete record of all payment events for compliance
-
-### 📊 Admin Dashboard & Analytics
-
-- ✅ **Platform overview** — total members, content published, engagement stats
-- ✅ **Content metrics** — most viewed, most commented, engagement trends
-- ✅ **Member growth** — new registrations, active users, retention
-- ✅ **Email campaign stats** — open rates, click rates, bounces
-- ✅ **Payment analytics** — donations received, transaction history
-- ✅ **Audit log** — complete history of all administrative actions
-- ✅ **Real-time updates** — see activity as it happens via WebSocket
-
-### 🔔 Real-Time Notifications
-
-- ✅ **Instant bell icon alerts** — notifications appear in real-time as you're logged in
-- ✅ **Notification types** — payment success, content published, comment replies, questions answered
-- ✅ **Unread badge** — see how many unread notifications you have
-- ✅ **Email notifications** — receive email summaries of activity
-- ✅ **Preference control** — choose which notifications you want by email
-- ✅ **Mark as read** — clean up notifications
-- ✅ **Automatic fallback** — notifications work even if real-time connection drops
-
----
-
-## 4. User Roles & Permissions
-
-Access is controlled at every level — from the UI down to the API. Four roles exist:
-
-| Capability | Visitor | Member | Moderator | Admin |
-|---|:---:|:---:|:---:|:---:|
-| **Browse public content** | ✅ | ✅ | ✅ | ✅ |
-| **View events** | ✅ | ✅ | ✅ | ✅ |
-| **Search & filter** | ✅ | ✅ | ✅ | ✅ |
-| **Register / log in** | ✅ | ✅ | ✅ | ✅ |
-| **React to posts** | — | ✅ | ✅ | ✅ |
-| **Comment on posts** | — | ✅ | ✅ | ✅ |
-| **Ask questions** | — | ✅ | ✅ | ✅ |
-| **Access member dashboard** | — | ✅ | ✅ | ✅ |
-| **Create content** | — | — | ✅ | ✅ |
-| **Edit own content** | — | — | ✅ | ✅ |
-| **Edit all content** | — | — | — | ✅ |
-| **Publish content** | — | — | ✅ | ✅ |
-| **Delete content** | — | — | ✅ | ✅ |
-| **Moderate comments & Q&A** | — | — | ✅ | ✅ |
-| **Manage content types** | — | — | — | ✅ |
-| **Manage all users** | — | — | — | ✅ |
-| **Change user roles** | — | — | — | ✅ |
-| **Suspend/reactivate users** | — | — | — | ✅ |
-| **Send email campaigns** | — | — | — | ✅ |
-| **Access settings** | — | — | — | ✅ |
-| **View audit logs** | — | — | — | ✅ |
-| **View analytics** | — | — | — | ✅ |
-
-> **Note:** All role checks are enforced at the API level, not just the frontend. Even if someone bypasses the UI, the backend will deny unauthorized requests.
-
----
-
-## 5. Platform Walkthrough
-
-### Public Website
-
-The public-facing site is accessible to anyone without logging in.
-
-| Page | URL | Description |
+| Layer | Technology | Rationale |
 |---|---|---|
-| **Home** | `/` | Hero, latest sermons, community stats, featured content |
-| **Library** | `/library` | Browse all published content — filter by topic, type, speaker |
-| **Sermon Series** | `/library/series` | Explore organized sermon series in sequential order |
-| **Content Detail** | `/content/:id` | Full post with reactions, comments, Q&A, media |
-| **Connect** | `/connect` | Discover ministries, small groups, service teams |
-| **Events** | `/events` | Upcoming events with date, location, capacity |
-| **Register** | `/register` | Create a free member account |
-| **Login** | `/login` | Sign in to your account |
+| Framework | React 18 + TypeScript | Component model scales well, TypeScript catches contract mismatches at compile time |
+| Routing | React Router v6 | Supports nested layouts and role-gated route guards |
+| Styling (public) | Tailwind CSS 3.4 | Utility classes keep styles colocated with markup, purges unused CSS in production |
+| Styling (admin) | CSS Custom Properties design system | Dedicated design token layer for the admin interface, decoupled from public styles |
+| HTTP client | Axios with interceptors | Automatic JWT refresh on 401, centralized error handling, request/response logging |
+| Rich-text editor | React Quill (Quill 2.0) | Full WYSIWYG with image embed, code blocks, formatting toolbar |
+| Icons | Lucide React | Tree-shakeable, consistent stroke weight across 450+ icons |
+| Sanitization | DOMPurify | Strips all XSS vectors from user-submitted HTML before DOM insertion |
+| State management | React Context API | Auth state, toast notifications, confirmation dialogs, without external deps |
+| Client cache | IndexedDB (idb) | Stores Bible module data and content locally for offline access |
+| Auth (OAuth) | @react-oauth/google | Google Identity Services integration, token forwarded to backend for verification |
 
-### Member Dashboard
+### Backend (319 Python source files across 14 Django apps)
 
-Accessible to registered, email-verified members at `/member`.
-
-| Section | What You Can Do |
-|---|---|
-| **Dashboard** | View activity summary, unread notifications, quick links |
-| **Sermons** | Access sermon library with your personal history |
-| **Events** | View upcoming events from a member perspective |
-| **Community** | Participate in discussions and see member activity |
-| **Profile** | Edit name, email, picture, and notification preferences |
-| **Notifications** | See all your notifications and mark as read |
-| **Prayer** | Share and pray for prayer requests *(coming soon)* |
-
-### Admin Dashboard
-
-Accessible to moderators and admins at `/admin`. Login via `/admin-auth`.
-
-| Section | URL | Access |
+| Layer | Technology | Rationale |
 |---|---|---|
-| **Dashboard Overview** | `/admin` | Moderator + Admin |
-| **Posts & Sermons** | `/admin/content` | Moderator + Admin |
-| **Sermon Series** | `/admin/series` | Moderator + Admin |
-| **Post Drafts** | `/admin/drafts` | Moderator + Admin |
-| **Moderation Queue** | `/admin/moderation` | Moderator + Admin |
-| **Member Directory** | `/admin/users` | Admin only |
-| **Email Campaigns** | `/admin/email` | Admin only |
-| **Settings** | `/admin/settings` | Admin only |
-| **Audit Log** | `/admin/audit` | Admin only |
-| **Reports** | `/admin/reports` | Admin only |
-| **Small Groups** | `/admin/small-groups` | Moderator + Admin *(coming soon)* |
-| **Events** | `/admin/events` | Moderator + Admin *(coming soon)* |
-| **Podcasting** | `/admin/podcasting` | Moderator + Admin *(coming soon)* |
-
----
-
-## 6. Real-Time Notifications
-
-The platform uses **WebSocket technology** for instant, real-time notifications — no need to refresh the page.
-
-### How It Works
-
-When something happens (e.g., payment received, comment reply, content published), you're notified **instantly** via:
-- 🔔 **Bell icon** in the navbar lights up with the unread count
-- 📲 **Notification center** shows all your recent notifications
-- 📧 **Email digest** (optional) summarizes activity
-
-### Features
-
-- ✅ **Real-time delivery** — notifications appear instantly as you're logged in
-- ✅ **Persistent database** — notifications saved so you can read them later
-- ✅ **User isolation** — you only see your own notifications
-- ✅ **Automatic fallback** — works even if the real-time connection drops
-- ✅ **mark as read** — keep your notification center clean
-- ✅ **Preference control** — choose which types you get emailed about
-
-### Notification Types
-
-- 📧 **Payment Successful** — Your donation was processed
-- 📝 **Content Published** — Content you created is now live
-- 💬 **Comment Reply** — Someone replied to your comment
-- ❓ **Question Answered** — Your question was answered
-- 👍 **New Reaction** — Someone reacted to your post
-- 📢 **New Announcement** — Sent by church leadership
-
----
-
-## 7. Payment Processing
-
-The platform integrates **Paystack** for secure, reliable payment processing. This is perfect for:
-- Church **donations** (one-time or recurring)
-- **Fundraising** campaigns
-- **Event registration** with fees
-- **Membership tiers**
-
-### How Payments Work
-
-1. **Member initiates donation** — clicks "Donate" and enters amount
-2. **Payment intent created** — system verifies user and creates a pre-authorization token
-3. **Fraud check** — automatic detection of suspicious patterns (rate limiting, IP analysis)
-4. **Redirect to Paystack** — secure checkout with card/bank options
-5. **Payment processed** — Paystack handles the transaction securely
-6. **Webhook callback** — Paystack notifies the platform of the result
-7. **Signature verification** — platform verifies the webhook using cryptographic signing
-8. **Amount validation** — platform confirms the exact amount matches what was authorized
-9. **Real-time notification** — donor and admin both notified instantly
-10. **Audit logged** — complete record stored for compliance
-
-### Security Features
-
-- ✅ **Fraud detection** — Automatic rate-limiting and IP tracking
-- ✅ **Signature verification** — Webhooks verified with HMAC SHA512
-- ✅ **Amount validation** — Backend verifies exact amount with Paystack
-- ✅ **Intent expiry** — Pre-authorized intents expire after 30 minutes
-- ✅ **Audit trail** — Every payment event logged and auditable
-- ✅ **PCI compliance** — Paystack handles card data securely (platform never sees cards)
-
-### For Admins
-
-- 📊 **Payment dashboard** — view all donations with amounts and dates
-- 📧 **Instant notifications** — get alerted when payments succeed or fail
-- 💾 **Payment history** — exportable list of all transactions
-- 📋 **Audit log** — see every payment step (intent creation, verification, webhook)
-- 🔍 **Fraud alerts** — suspicious activity flagged automatically
-
----
-
-## 8. Technology Overview
-
-You don't need to understand this to use the platform. This section is for developers and technical reviewers.
-
-### Frontend
-
-| Technology | Purpose | Why? |
-|---|---|---|
-| React 18 + TypeScript | UI framework with full type safety | Modern, scalable, catches errors at compile time |
-| React Router v6 | Page navigation and protected routes | Role-aware routing ensures users can only access permitted areas |
-| Tailwind CSS | Styling for public-facing pages | Utility-first CSS framework — fast, responsive, maintainable |
-| Custom Design System | Admin dashboard styling | Enterprise-quality UI with CSS custom properties |
-| Axios | HTTP API client with interceptors | Automatic token refresh, error handling, request/response logging |
-| React Quill | Rich-text content editor (WYSIWYG) | Industry-standard editor used by Medium, Notion, etc. |
-| Lucide React | Icon library | 450+ professionally-designed icons |
-| DOMPurify | HTML sanitization | Prevents XSS attacks by stripping malicious code from user input |
-| Context API | Global state (auth, toast, dialogs) | Native React solution for app-wide state |
-| IndexedDB (idb library) | Browser-side caching | Stores data locally for offline access and performance |
-
-### Backend
-
-| Technology | Purpose | Why? |
-|---|---|---|
-| Python 3.11 | Programming language | Readability, strong standard library, great ecosystem |
-| Django 5 | Web framework | Production-grade, 20+ years of maturity, built-in security |
-| Django REST Framework | REST API toolkit | Makes building APIs fast, with permissions, pagination, serialization |
-| PostgreSQL 14+ | Primary database | ACID transactions, full-text search, JSON support, reliability |
-| JWT (SimpleJWT) | Token-based authentication | Stateless, scalable, works with microservices |
-| Celery | Task queue | Async/delayed tasks (email, scheduled publishing, maintenance jobs) |
-| Redis | Message broker & cache | Fast, in-memory, supports pub/sub for real-time features |
-| Django Channels | WebSocket support | Real-time notifications and bidirectional communication |
-| Daphne | ASGI server | Runs Django + channels + WebSocket |
-| Gunicorn | WSGI server | Production application server |
-| Whitenoise | Static file serving | Serves the React build as part of Django |
-| drf-spectacular | API documentation | Auto-generates OpenAPI 3.0 spec and interactive Swagger UI |
-| Pillow | Image processing | Handles image uploads, resizing, optimization |
+| Language | Python 3.12 | Type hints, pattern matching, latest stdlib improvements |
+| Framework | Django 5 | Mature ORM, migration system, middleware pipeline, battle-tested security defaults |
+| API | Django REST Framework | Serializers, viewsets, permissions, pagination, filtering, throttling out of the box |
+| Auth | SimpleJWT + Google OAuth | Stateless JWT tokens with configurable expiry and rotation, Google token audience verification on backend |
+| Database | PostgreSQL 16 | ACID transactions, full-text search, JSONB for flexible data, proven at scale |
+| Task queue | Celery | Distributed task execution for email, scheduled publishing, cleanup jobs |
+| Broker/Cache | Redis 7 | In-memory pub/sub for Channels, message broker for Celery, general cache |
+| WebSocket | Django Channels + Daphne | Full-duplex real-time communication over ASGI |
+| API docs | drf-spectacular | Auto-generates OpenAPI 3.0 schema, Swagger UI, and ReDoc from code |
+| Filtering | django-filter | Declarative queryset filtering on API endpoints |
+| Config | python-decouple + dj-database-url | 12-factor configuration from environment variables |
+| Static files | Whitenoise | Serves compressed static assets from Django without a separate file server |
+| Image processing | Pillow | Handles upload, resize, and optimization of user-submitted images |
 
 ### Infrastructure
 
-| Component | Technology | Why? |
+| Component | Technology | Configuration |
 |---|---|---|
-| **Containerization** | Docker | Consistent environment across dev, staging, production |
-| **Multi-stage builds** | Docker | Reduces image size by stripping out dev dependencies |
-| **Container orchestration** | Docker Compose | Simple way to run web + database + redis + celery together |
-| **Reverse proxy** | Nginx | Fast, handles SSL/TLS, compresses responses, serves static files |
-| **Static file serving** | Whitenoise | Avoids need for separate static file server |
-| **Secrets management** | Environment variables | 12-factor app approach — never hardcode secrets |
-
-### External Services
-
-| Service | Purpose |
-|---|---|
-| **Paystack** | Payment processing (donations, giving, fundraising) |
-| **SMTP Server** | Email delivery (registration, notifications, campaigns) |
-| **DNS / CDN** (optional) | Domain management and content delivery |
+| Containerization | Docker (multi-stage) | Stage 1: Node 22-alpine builds React. Stage 2: Python 3.12-slim runs Django. Non-root user (`appuser`, UID 1000). |
+| Orchestration | Docker Compose v3.8 | 5 services: `db` (Postgres), `redis`, `web` (Django+React), `celery`, `nginx`. Health checks on `db` and `redis`. |
+| Reverse proxy | Nginx (Alpine) | WebSocket upgrade support, gzip, static/media file serving, SSL termination ready |
+| Health checks | Container-level + HTTP | `pg_isready` for Postgres, `redis-cli ping` for Redis, HTTP probe on `/api/v1/docs/` for the app |
 
 ---
 
-## 9. Project Structure
+## Core Modules
+
+The backend is organized as 14 Django apps, each owning a bounded domain:
+
+| Module | Responsibility | Key Models |
+|---|---|---|
+| `users` | Registration, login, email verification, password reset, JWT lifecycle, Google OAuth, profile management | `User`, `Profile` |
+| `content` | Posts (sermons, articles, devotionals, announcements), draft management, scheduled publishing, media attachments, content types | `Content`, `ContentType`, `Draft`, `Schedule` |
+| `series` | Sermon series organization, ordering, public and admin endpoints | `Series`, `SeriesItem` |
+| `interactions` | Comments (threaded), reactions (5 types: Like, Amen, Love, Insight, Praise), Q&A with resolution | `Comment`, `Reaction`, `Question` |
+| `notifications` | Real-time WebSocket notifications, REST fallback, user preference controls, email digests | `Notification`, `UserPreferences` |
+| `payments` | Paystack integration, payment intent lifecycle, webhook processing, signature verification, fraud detection | `PaymentTransaction`, `PaymentIntent`, `PaymentAuditLog` |
+| `giving` | Seed/giving catalog with configurable items and amounts | `GivingItem` |
+| `payouts` | Payout management and tracking | Payout-related models |
+| `email_campaigns` | Newsletter creation, audience segmentation, template management, delivery tracking, subscription management | `Campaign`, `EmailTemplate`, `Subscription` |
+| `email` | Standalone transactional email service (verification, password reset, notifications) | Service layer |
+| `moderation` | Content flagging, comment moderation queue, audit logging of all administrative actions | `AuditLog`, `ContentFlag` |
+| `analytics` | Page-view tracking, unique visitor identification via device fingerprinting, dashboard metrics | `PageView` |
+| `bible` | Offline-first Bible text access with client-side IndexedDB caching | Bible data models |
+| `contact` | Public contact form submission, admin inbox for review | Contact models |
+
+---
+
+## Role-Based Access Control
+
+Access control is enforced at the API layer through DRF permission classes. The frontend renders UI conditionally based on role, but authorization decisions happen exclusively on the backend. Even if someone modifies the client-side JavaScript, the API will reject unauthorized requests.
+
+Four roles exist in the system:
+
+| Capability | Visitor | Member | Moderator | Admin |
+|---|:---:|:---:|:---:|:---:|
+| Browse public content, events, series | Yes | Yes | Yes | Yes |
+| Search and filter content | Yes | Yes | Yes | Yes |
+| Register and authenticate | Yes | Yes | Yes | Yes |
+| React to posts (5 reaction types) | -- | Yes | Yes | Yes |
+| Comment and reply (threaded) | -- | Yes | Yes | Yes |
+| Submit questions for Q&A | -- | Yes | Yes | Yes |
+| Access member dashboard and preferences | -- | Yes | Yes | Yes |
+| Create and edit own content | -- | -- | Yes | Yes |
+| Publish and schedule content | -- | -- | Yes | Yes |
+| Moderate comments, Q&A, flagged content | -- | -- | Yes | Yes |
+| Edit or delete any content | -- | -- | -- | Yes |
+| Manage users (roles, suspension, export) | -- | -- | -- | Yes |
+| Send email campaigns | -- | -- | -- | Yes |
+| Configure platform settings and content types | -- | -- | -- | Yes |
+| View audit logs, analytics, reports | -- | -- | -- | Yes |
+
+Members are required to verify their email address after registration before gaining authenticated access. Account suspension preserves all data but denies login.
+
+---
+
+## Payment Processing Pipeline
+
+Donations are processed through Paystack with a multi-step verification pipeline designed to prevent fraud and ensure auditability.
+
+```
+Member clicks "Donate"
+        |
+        v
+  [1] Frontend sends amount + user to backend
+        |
+        v
+  [2] Backend creates PaymentIntent (pre-authorization token)
+      - Rate limiting check (per IP, per user)
+      - Amount validation
+      - Intent expires after 30 minutes
+        |
+        v
+  [3] Frontend redirects to Paystack checkout
+      - Card/bank details handled entirely by Paystack
+      - Platform never sees raw payment credentials (PCI compliant)
+        |
+        v
+  [4] Paystack processes transaction
+        |
+        v
+  [5] Paystack sends webhook callback to backend
+        |
+        v
+  [6] Backend verifies webhook signature (HMAC SHA512, timing-safe comparison)
+        |
+        v
+  [7] Backend confirms amount matches the original PaymentIntent
+        |
+        v
+  [8] Transaction recorded, notifications dispatched (WebSocket + email)
+        |
+        v
+  [9] Full event chain written to PaymentAuditLog
+```
+
+Fraud detection includes per-user and per-IP rate limiting, user-agent tracking, and automatic flagging of suspicious patterns. Every step in the pipeline is logged in `PaymentAuditLog` for compliance and dispute resolution.
+
+---
+
+## Real-Time Notification System
+
+Notifications are delivered through WebSocket (Django Channels) for instant updates, with automatic fallback to REST polling if the WebSocket connection drops.
+
+**Supported notification types:**
+- Payment confirmation (donor and admin)
+- Content published (author)
+- Comment reply (original commenter)
+- Question answered (asker)
+- New reaction on content (author)
+- Announcements (all members)
+
+**How it works:**
+1. When an event occurs (payment processed, comment posted, etc.), the notification service creates a `Notification` record in the database.
+2. The service pushes the notification through the Channels layer to the user's WebSocket consumer.
+3. The frontend `NotificationBell` component receives the event and updates the unread badge count in real time.
+4. If the WebSocket is disconnected, the frontend periodically polls `GET /api/v1/notifications/` to catch up.
+5. Users control which notification types trigger email alerts through their notification preferences.
+
+Each user only receives their own notifications. There is no broadcast leakage. Notifications persist in the database and can be marked as read or reviewed later.
+
+---
+
+## Project Structure
 
 ```
 church-digital-platform/
-│
-├── backend/                           # Django REST API
-│   ├── config/                        # Settings, ASGI, URLs, middleware
-│   │   ├── settings.py                # Django configuration
-│   │   ├── asgi.py                    # ASGI app (Daphne, channels)
-│   │   ├── wsgi.py                    # WSGI app (Gunicorn)
-│   │   ├── urls.py                    # API routes
-│   │   └── celery.py                  # Celery configuration
-│   │
-│   ├── apps/
-│   │   ├── users/                     # Authentication, profiles, JWT
-│   │   │   ├── models.py              # User model, profile
-│   │   │   ├── views.py               # Register, login, email verification
-│   │   │   ├── serializers.py         # User serializers
-│   │   │   └── urls.py                # Auth endpoints
-│   │   │
-│   │   ├── content/                   # Posts, sermons, articles, drafts
-│   │   │   ├── models.py              # Content, ContentType, Draft, Schedule
-│   │   │   ├── views.py               # CRUD operations
-│   │   │   ├── serializers.py         # Content serializers
-│   │   │   └── urls.py                # Content endpoints
-│   │   │
-│   │   ├── series/                    # Sermon series management
-│   │   │   ├── models.py              # Series, series ordering
-│   │   │   ├── views.py               # Series CRUD
-│   │   │   └── serializers.py         # Series serializers
-│   │   │
-│   │   ├── interactions/              # Comments, reactions, Q&A
-│   │   │   ├── models.py              # Comment, Reaction, Question
-│   │   │   ├── views.py               # Threaded comments, reactions
-│   │   │   └── serializers.py         # Comment serializers
-│   │   │
-│   │   ├── notifications/             # Real-time & email notifications
-│   │   │   ├── models.py              # Notification, UserPreferences
-│   │   │   ├── consumers.py           # WebSocket consumer (Channels)
-│   │   │   ├── services.py            # Notification service
-│   │   │   ├── views.py               # Notification REST endpoints
-│   │   │   ├── routing.py             # WebSocket routes
-│   │   │   └── urls.py                # Notification endpoints
-│   │   │
-│   │   ├── payments/                  # Paystack integration
-│   │   │   ├── models.py              # PaymentTransaction, PaymentIntent, PaymentAuditLog
-│   │   │   ├── views.py               # Initialize payment, webhook
-│   │   │   ├── services.py            # Payment logic
-│   │   │   ├── webhooks.py            # Paystack webhook handler
-│   │   │   ├── utils.py               # Signature verification, fraud detection
-│   │   │   └── urls.py                # Payment endpoints
-│   │   │
-│   │   ├── email_campaigns/           # Email marketing
-│   │   │   ├── models.py              # Campaign, EmailTemplate, Subscription
-│   │   │   ├── views.py               # Campaign CRUD, send
-│   │   │   ├── tasks.py               # Celery tasks for sending
-│   │   │   └── urls.py                # Campaign endpoints
-│   │   │
-│   │   ├── moderation/                # Content flagging, audit logs
-│   │   │   ├── models.py              # AuditLog, ContentFlag, reports
-│   │   │   ├── views.py               # Moderation queue, actions
-│   │   │   └── urls.py                # Moderation endpoints
-│   │   │
-│   │   └── ...other apps
-│   │
-│   ├── tests/                         # Automated tests
-│   ├── migrations/                    # Database migrations
-│   ├── manage.py                      # Django CLI
-│   ├── requirements.txt                # Python dependencies
-│   └── .env.example                   # Template for environment variables
-│
-├── src/                               # React frontend (TypeScript)
-│   ├── public/                        # Public-facing pages
-│   │   ├── pages/
-│   │   │   ├── Home.tsx               # Homepage
-│   │   │   ├── Library.tsx            # Content library
-│   │   │   ├── SeriesList.tsx         # Sermon series
-│   │   │   ├── ContentDetail.tsx      # Post detail view
-│   │   │   ├── Connect.tsx            # Ministries
-│   │   │   ├── Events.tsx             # Events page
-│   │   │   └── ...other pages
-│   │   └── components/
-│   │       ├── ContentCard.tsx       # Reusable content card
-│   │       ├── SearchBar.tsx         # Search component
-│   │       └── ...other components
-│   │
-│   ├── member/                        # Member dashboard (authenticated)
-│   │   ├── pages/
-│   │   │   ├── MemberDashboard.tsx   # Member home
-│   │   │   ├── NotificationCenter.tsx # Notifications view
-│   │   │   ├── SermonLibrary.tsx     # Member sermon library
-│   │   │   └── ...other pages
-│   │   └── components/
-│   │       └── ...components
-│   │
-│   ├── admin/                         # Admin dashboard (auth required, roles enforced)
-│   │   ├── Dashboard.tsx              # Overview metrics
-│   │   ├── ContentManagement.tsx      # Create, edit, publish posts
-│   │   ├── UserManagement.tsx         # Users, roles, suspension
-│   │   ├── EmailCampaigns.tsx         # Campaigns & templates
-│   │   ├── Moderation.tsx             # Moderation queue
-│   │   ├── Settings.tsx               # Platform settings
-│   │   ├── AuditLog.tsx               # Audit log viewer
-│   │   ├── PaymentDashboard.tsx       # Payment analytics
-│   │   └── ...other pages
-│   │
-│   ├── auth/                          # Authentication
-│   │   ├── contexts/                  # Auth context
-│   │   ├── hooks/                     # useAuth hook
-│   │   ├── services/                  # API service for auth
-│   │   └── ...auth logic
-│   │
-│   ├── components/                    # Shared components
-│   │   ├── RichTextEditor.tsx         # Quill editor wrapper
-│   │   ├── DataTable.tsx              # Reusable data table
-│   │   ├── NotificationBell.tsx       # Real-time notification bell
-│   │   ├── ConfirmDialog.tsx          # Confirmation dialogs
-│   │   ├── Toast.tsx                  # Toast notifications
-│   │   └── ...other components
-│   │
-│   ├── services/                      # API service layers
-│   │   ├── auth.ts                    # Auth API endpoints
-│   │   ├── content.ts                 # Content API endpoints
-│   │   ├── payments.ts                # Payment API endpoints
-│   │   ├── notifications.ts           # Notification API endpoints
-│   │   └── ...other services
-│   │
-│   ├── hooks/                         # Custom React hooks
-│   │   ├── useAuth.ts                 # Authentication hook
-│   │   ├── useWebSocketNotifications.ts # WebSocket notifications
-│   │   ├── useAsync.ts                # Async operation hook
-│   │   └── ...other hooks
-│   │
-│   ├── router/                        # Routes
-│   │   └── AppRouter.tsx              # All routes defined here
-│   │
-│   ├── contexts/                      # React contexts
-│   │   ├── AuthContext.tsx            # Auth state
-│   │   ├── ToastContext.tsx           # Toast notifications
-│   │   └── ConfirmContext.tsx         # Confirm dialogs
-│   │
-│   ├── types/                         # TypeScript types
-│   │   ├── models.ts                  # Data models
-│   │   ├── api.ts                     # API response types
-│   │   └── ...other types
-│   │
-│   ├── styles/                        # Global styles
-│   │   ├── globals.css                # Reset, variables, base
-│   │   └── tailwind.css               # Tailwind imports
-│   │
-│   └── App.tsx & index.tsx            # App entry point
-│
-├── public/                            # Static files
-│   ├── index.html                     # React entry point
-│   ├── favicon.ico
-│   └── ...other static files
-│
-├── docker-compose.yml                 # Full-stack orchestration
-├── Dockerfile                         # Multi-stage build
-├── nginx.conf                         # Reverse proxy configuration
-├── package.json                       # Frontend dependencies
-├── tailwind.config.js                 # Tailwind configuration
-├── tsconfig.json                      # TypeScript configuration
-├── .env.example                       # Template for frontend env vars
-│
-└── instruction.md                     # Developer guidelines & standards
-
+|
+|-- backend/                              Django REST API (Python 3.12)
+|   |-- config/                           Settings, ASGI/WSGI, URL routing, Celery config
+|   |   |-- settings.py                   Django configuration (12-factor, env-based)
+|   |   |-- asgi.py                       ASGI entrypoint (Daphne + Channels)
+|   |   |-- wsgi.py                       WSGI entrypoint (Gunicorn)
+|   |   |-- urls.py                       API route definitions
+|   |   |-- celery.py                     Celery app and task discovery
+|   |   +-- views.py                      ReactAppView (SPA catch-all)
+|   |
+|   |-- apps/
+|   |   |-- users/                        Auth, profiles, JWT, Google OAuth, email verification
+|   |   |-- content/                      Posts, sermons, drafts, scheduling, media, content types
+|   |   |-- series/                       Sermon series management and ordering
+|   |   |-- interactions/                 Comments (threaded), reactions, Q&A
+|   |   |-- notifications/               WebSocket consumer, notification service, preferences
+|   |   |-- payments/                     Paystack integration, webhooks, fraud detection
+|   |   |-- giving/                       Giving/seed catalog
+|   |   |-- payouts/                      Payout tracking
+|   |   |-- email_campaigns/             Campaign CRUD, templates, Celery send tasks
+|   |   |-- email/                        Transactional email service
+|   |   |-- moderation/                   Flags, audit log, moderation queue
+|   |   |-- analytics/                    Page views, visitor fingerprinting, metrics
+|   |   |-- bible/                        Bible text module (offline-first)
+|   |   +-- contact/                      Contact form + admin inbox
+|   |
+|   |-- tests/                            Backend test suite
+|   |-- manage.py                         Django CLI
+|   +-- requirements.txt                  Python dependencies
+|
+|-- src/                                  React frontend (TypeScript)
+|   |-- public/                           Public-facing pages (Home, Library, Series, Events)
+|   |-- member/                           Member dashboard (authenticated)
+|   |-- admin/                            Admin dashboard (role-gated)
+|   |-- auth/                             Auth context, hooks, services
+|   |-- components/                       Shared UI components (editor, tables, notifications)
+|   |-- services/                         API service layer (Axios wrappers)
+|   |-- hooks/                            Custom hooks (useAuth, useWebSocketNotifications)
+|   |-- router/                           Route definitions with role guards
+|   |-- contexts/                         Auth, toast, confirm dialog contexts
+|   |-- types/                            TypeScript interfaces and type definitions
+|   +-- styles/                           Global CSS, Tailwind imports, design tokens
+|
+|-- public/                               Static assets (index.html, favicon, manifests)
+|-- docker-compose.yml                    5-service orchestration (db, redis, web, celery, nginx)
+|-- Dockerfile                            Multi-stage build (Node 22 -> Python 3.12-slim)
+|-- nginx.conf                            Reverse proxy config (WebSocket upgrade, caching)
+|-- package.json                          Frontend dependencies and scripts
+|-- tailwind.config.js                    Tailwind configuration
+|-- tsconfig.json                         TypeScript compiler configuration
+|-- .env.example                          Frontend environment template
+|-- .env.production.example               Production environment template
++-- instruction.md                        Developer guidelines and coding standards
 ```
 
 ---
 
-## 10. Getting Started
+## Getting Started
 
-Choose your path:
+### Option A: Docker (recommended)
 
-### Option A: Docker (Recommended for Everyone)
-
-The fastest way to run the full platform locally. Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
 
 ```bash
-# 1. Clone the repository
-git clone <repository-url>
-cd church-digital-platform
+# Clone the repository
+git clone https://github.com/Gidheav/church-digital-engagement-platform.git
+cd church-digital-engagement-platform
 
-# 2. Create your environment file
-cp .env.example .env.production
-# Open .env.production and fill in values:
-# - SECRET_KEY: long random string
-# - DATABASE_URL: usually postgresql://user:pass@db:5432/church
-# - PAYSTACK_SECRET_KEY: your Paystack test/live key
-# - etc. (see Section 11 below)
+# Create environment file from template
+cp .env.production.example .env.production
+# Edit .env.production with your actual values (see Environment Configuration below)
 
-# 3. Start all services
-docker-compose up -d
+# Build and start all services
+docker-compose up -d --build
 
-# 4. Run migrations
+# Run database migrations
 docker-compose exec web python backend/manage.py migrate
 
-# 5. Create admin account
+# Create the initial admin account
 docker-compose exec web python backend/manage.py createsuperuser
 
-# 6. Load with sample data (optional)
-docker-compose exec web python backend/manage.py loaddata initial_data
-
-# 7. Access the platform
-#    Website:     http://localhost:8000
-#    Admin:       http://localhost:8000/admin-auth
-#    API docs:    http://localhost:8000/api/v1/docs/
+# Verify everything is running
+docker-compose ps
 ```
 
-To stop all services:
+Access points after startup:
+- Public site: `http://localhost` (port 80 via Nginx) or `http://localhost:8000` (direct to Django)
+- Admin login: `http://localhost/admin-auth`
+- API documentation: `http://localhost/api/v1/docs/` (Swagger) or `http://localhost/api/v1/redoc/` (ReDoc)
+
+Useful commands:
 ```bash
-docker-compose down
+docker-compose logs -f web          # Application logs
+docker-compose logs -f celery       # Background task logs
+docker-compose down                 # Stop all services
+docker-compose down -v              # Stop and remove volumes (destroys data)
 ```
 
-To view logs:
-```bash
-docker-compose logs -f web        # Frontend + Backend logs
-docker-compose logs -f db         # Database logs
-docker-compose logs -f redis      # Redis logs
-docker-compose logs -f celery     # Celery worker logs
-```
+### Option B: Local development (without Docker)
 
----
+**Prerequisites:** Python 3.11+, Node.js 18+, PostgreSQL 14+, Redis 7+, Git
 
-### Option B: Local Development
-
-For developers who prefer running services separately.
-
-**Prerequisites:**
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 14+ (or SQLite for local testing)
-- Redis 7+
-- Git
-
-**Step 1: Backend Setup**
-
+**Backend:**
 ```bash
 cd backend
-
-# Create Python virtual environment
 python -m venv ../venv
 
-# Activate (Windows)
+# Windows
 ..\venv\Scripts\activate
-# Or (macOS/Linux)
+# macOS/Linux
 source ../venv/bin/activate
 
-# Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Create .env file
 cp .env.example .env
-# Edit .env with your values (database, keys, email, etc.)
+# Edit .env with database credentials, Paystack keys, SMTP config
 
-# Run migrations
 python manage.py migrate
-
-# Create admin account
 python manage.py createsuperuser
-
-# Start backend server
 python manage.py runserver
 ```
 
-Backend is now at: `http://localhost:8000/api/v1/`
+Backend available at `http://localhost:8000/api/v1/`
 
-**Step 2: Frontend Setup**
-
-Open a new terminal from the project root:
-
+**Frontend** (separate terminal, from project root):
 ```bash
-# Install dependencies
 npm install
-
-# Create .env file
-echo "REACT_APP_API_BASE_URL=http://localhost:8000/api/v1" > .env
-
-# Start React dev server
+echo "REACT_APP_API_BASE_URL=http://localhost:8000/api/v1" > .env.local
 npm start
 ```
 
-Frontend is now at: `http://localhost:3000` (auto-proxies to backend)
+Frontend available at `http://localhost:3000` (proxied to backend via `package.json` proxy config)
 
-**Step 3: Celery (Optional but Recommended)**
-
-For background tasks (email sending, scheduled publishing):
-
+**Celery** (optional, separate terminal):
 ```bash
-# Ensure Redis is running first
-
-# Terminal 3: Start Celery worker
 cd backend
-celery -A config worker -l info --pool=threads
-
-# Terminal 4: Start Celery Beat (scheduler)
-cd backend
-celery -A config beat -l info
+celery -A config worker -l info --pool=threads    # Worker
+celery -A config beat -l info                      # Scheduler (another terminal)
 ```
 
 ---
 
-### Option C: Production Deployment
+## Environment Configuration
 
-See [Section 13: Deployment](#13-deployment) below.
+All secrets and configuration are loaded from environment variables. Nothing is hardcoded. `.env` files are gitignored.
 
----
+### Backend (`backend/.env`)
 
-## 11. Environment Variables
-
-### Backend — `backend/.env`
-
-**CRITICAL:** Keep `.env` secret! Add to `.gitignore` and **never commit** to version control.
-
-| Variable | Required | Example | Description |
+| Variable | Required | Example | Purpose |
 |---|:---:|---|---|
-| `SECRET_KEY` | ✅ | `django-insecure-abc123xyz...` | Django secret key — generate with `django-admin shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `DEBUG` | ✅ | `False` | Set to `False` in production, `True` in development |
-| `ALLOWED_HOSTS` | ✅ | `localhost,127.0.0.1,yourdomain.com` | Comma-separated list of allowed domains |
-| `DATABASE_URL` | ✅ | `postgresql://user:pass@localhost:5432/church` | Full PostgreSQL connection string |
-| `REDIS_URL` | ✅ | `redis://localhost:6379/0` | Redis connection string |
-| `EMAIL_HOST` | ✅ | `smtp.gmail.com` | SMTP server for sending emails |
-| `EMAIL_PORT` | ✅ | `587` | SMTP port (usually 587 for TLS) |
-| `EMAIL_USE_TLS` | ✅ | `True` | Enable TLS encryption |
-| `EMAIL_HOST_USER` | ✅ | `your-email@gmail.com` | SMTP account email |
-| `EMAIL_HOST_PASSWORD` | ✅ | `app-specific-password` | SMTP account password (use app-specific password for Gmail) |
-| `DEFAULT_FROM_EMAIL` | — | `noreply@yourdomain.com` | "From" name/email in emails sent |
-| `CORS_ALLOWED_ORIGINS` | ✅ | `http://localhost:3000,https://yourdomain.com` | Frontend URL(s) allowed to call the API |
-| `JWT_SECRET_KEY` | — | (auto-uses SECRET_KEY) | Optional: separate JWT signing key |
-| `GOOGLE_CLIENT_ID` | ✅ (for Google auth) | `1234567890-abc.apps.googleusercontent.com` | Google OAuth Web Client ID used for backend token audience verification |
-| `GOOGLE_CLIENT_SECRET` | ✅ (for Google auth) | `GOCSPX-...` | Google OAuth Web Client Secret (backend only, never expose to frontend) |
-| **Payment Configuration** |
-| `PAYSTACK_PUBLIC_KEY` | ✅ | `pk_test_8bd23795b032...` | Paystack public key (test or live) |
-| `PAYSTACK_SECRET_KEY` | ✅ | `sk_test_635e1263d362...` | Paystack secret key (test or live) |
-| `PAYSTACK_WEBHOOK_SECRET` | ✅ | `Y7gf3AGqSqfTEF...` | Webhook signing secret (use `secrets.token_urlsafe(32)`) |
+| `SECRET_KEY` | Yes | `<50+ char random string>` | Django signing key. Generate with: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
+| `DEBUG` | Yes | `False` | Must be `False` in production |
+| `ALLOWED_HOSTS` | Yes | `yourdomain.com,www.yourdomain.com` | Comma-separated list of valid hostnames |
+| `DATABASE_URL` | Yes | `postgresql://user:pass@localhost:5432/church_db` | PostgreSQL connection string |
+| `REDIS_URL` | Yes | `redis://localhost:6379/0` | Redis connection string |
+| `CORS_ALLOWED_ORIGINS` | Yes | `https://yourdomain.com` | Frontend origins allowed to call the API |
+| `EMAIL_HOST` | Yes | `smtp.gmail.com` | SMTP server |
+| `EMAIL_PORT` | Yes | `587` | SMTP port (587 for TLS) |
+| `EMAIL_USE_TLS` | Yes | `True` | Enable TLS |
+| `EMAIL_HOST_USER` | Yes | `church@gmail.com` | SMTP account |
+| `EMAIL_HOST_PASSWORD` | Yes | `<app-specific password>` | SMTP password (use app-specific password for Gmail) |
+| `DEFAULT_FROM_EMAIL` | No | `noreply@yourdomain.com` | Sender address for outgoing email |
+| `PAYSTACK_PUBLIC_KEY` | Yes | `pk_live_xxxxx` | Paystack public key |
+| `PAYSTACK_SECRET_KEY` | Yes | `sk_live_xxxxx` | Paystack secret key |
+| `PAYSTACK_WEBHOOK_SECRET` | Yes | `<random token>` | Webhook HMAC signing secret |
+| `GOOGLE_CLIENT_ID` | For OAuth | `<client_id>.apps.googleusercontent.com` | Google OAuth web client ID |
+| `GOOGLE_CLIENT_SECRET` | For OAuth | `GOCSPX-...` | Google OAuth client secret (backend only) |
 
-### Frontend — `.env` (project root)
+### Frontend (`.env.local` or `.env.production` at project root)
 
-| Variable | Required | Example | Description |
+| Variable | Required | Example | Purpose |
 |---|:---:|---|---|
-| `REACT_APP_API_BASE_URL` | ✅ | `http://localhost:8000/api/v1` | Backend API base URL |
-| `REACT_APP_GOOGLE_CLIENT_ID` | ✅ (for Google auth) | `1234567890-abc.apps.googleusercontent.com` | Public Google OAuth client ID used by Google Sign-In UI |
-| `REACT_APP_WS_URL` | — | `ws://localhost:8000/ws` | WebSocket server URL (auto-constructed if omitted) |
+| `REACT_APP_API_BASE_URL` | Yes | `https://yourdomain.com/api/v1` | Backend API base URL |
+| `REACT_APP_GOOGLE_CLIENT_ID` | For OAuth | `<client_id>.apps.googleusercontent.com` | Google Sign-In button client ID |
+| `REACT_APP_WS_URL` | No | `wss://yourdomain.com/ws` | WebSocket URL (auto-constructed if omitted) |
 
-### Google OAuth Setup (Google Cloud Console)
+### Google OAuth setup
 
-1. Go to Google Cloud Console and create/select a project.
-2. Open APIs & Services > OAuth consent screen and configure app details.
-3. Open APIs & Services > Credentials > Create Credentials > OAuth client ID.
-4. Choose application type `Web application`.
-5. Add Authorized JavaScript origins:
-   - Local dev: `http://localhost:3000`
-   - Production frontend origin(s): `https://yourdomain.com`
-6. Add Authorized redirect URIs:
-   - For Google Identity Services button-only flow, a dedicated redirect URI is typically not required.
-   - If your organization policy requires one, use your frontend auth callback URL (for example `https://yourdomain.com/login`).
-7. Copy credentials into env files:
-   - Backend: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-   - Frontend: `REACT_APP_GOOGLE_CLIENT_ID`
-
-Security notes:
-- The backend verifies Google ID tokens and enforces audience match against `GOOGLE_CLIENT_ID`.
-- Never expose `GOOGLE_CLIENT_SECRET` in frontend code or `REACT_APP_*` variables.
-- Keep production origins HTTPS-only in Google Console.
-
-### Docker Environment
-
-When using Docker, environment variables can be set in `.env.production`:
-
-```env
-# Core Django
-SECRET_KEY=your-super-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=localhost,your-domain.com
-CORS_ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.com
-
-# Database
-DATABASE_URL=postgresql://pguser:pgpass@db:5432/church_db
-
-# Redis
-REDIS_URL=redis://redis:6379/0
-
-# Email
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
-
-# Paystack
-PAYSTACK_PUBLIC_KEY=pk_live_xxxxxxxxxxxxx
-PAYSTACK_SECRET_KEY=sk_live_xxxxxxxxxxxxx
-PAYSTACK_WEBHOOK_SECRET=your-webhook-secret
-
-# Default from email
-DEFAULT_FROM_EMAIL=noreply@yourchurch.com
-```
-
-Then reference in `docker-compose.yml`:
-```yaml
-env_file:
-  - .env.production
-```
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
+2. Configure the OAuth consent screen under APIs & Services.
+3. Create an OAuth 2.0 Client ID (Web application type).
+4. Add authorized JavaScript origins: your frontend URL(s).
+5. Copy the Client ID to both `GOOGLE_CLIENT_ID` (backend) and `REACT_APP_GOOGLE_CLIENT_ID` (frontend). Copy the Client Secret to `GOOGLE_CLIENT_SECRET` (backend only, never expose to the frontend).
+6. The backend verifies Google ID tokens and enforces audience match. Keep production origins HTTPS-only.
 
 ---
 
-## 12. API Reference
+## API Reference
 
-The API is fully documented and self-testing. When your backend is running, visit:
+The API is fully documented through auto-generated OpenAPI 3.0 spec. When the backend is running:
 
-### 📚 Interactive API Documentation
-
-> **`http://localhost:8000/api/v1/docs/`** — Swagger UI (explore and test every endpoint)
+- **Swagger UI:** `http://localhost:8000/api/v1/docs/` (interactive, test endpoints directly)
+- **ReDoc:** `http://localhost:8000/api/v1/redoc/` (clean reference documentation)
+- **Raw schema:** `http://localhost:8000/api/v1/schema/` (JSON/YAML for code generation)
 
 All endpoints are prefixed with `/api/v1/`.
 
+### Endpoint groups
+
+| Group | Base Path | Auth | Description |
+|---|---|---|---|
+| Auth | `/api/v1/auth/` | None | Register, login, logout, token refresh, email verification, password reset |
+| Admin Auth | `/api/v1/admin-auth/` | Staff+ | Staff-only login and token management |
+| Public Content | `/api/v1/public/` | None | Browse posts, series, homepage data, search |
+| Public Series | `/api/v1/public/` | None | Browse sermon series |
+| Member Profile | `/api/v1/me/` | Member+ | Current user profile and preferences |
+| Comments | `/api/v1/comments/` | Member+ (write) | Threaded comments, replies |
+| Notifications | `/api/v1/notifications/` | Member+ | List, mark read, preference management |
+| Payments | `/api/v1/payments/` | Member+ | Initialize donation, verify, payment history |
+| Giving Items | `/api/v1/giving-items/` | Varies | Seed/giving catalog |
+| Analytics | `/api/v1/analytics/` | Varies | Page view tracking, dashboard metrics |
+| Contact | `/api/v1/contact/` | None (submit) | Contact form submission, admin inbox |
+| Admin Content | `/api/v1/admin/content/` | Moderator+ | Content CRUD, drafts, scheduling |
+| Admin Series | `/api/v1/admin/series/` | Moderator+ | Series management |
+| Admin Interactions | `/api/v1/admin/interactions/` | Moderator+ | Moderation queue, comment actions |
+| Admin Email | `/api/v1/admin/email/` | Admin | Campaign CRUD, send, tracking |
+| Admin Moderation | `/api/v1/admin/moderation/` | Admin | Audit logs, flags, reports |
+| Bible | `/api/bible/` | None | Bible text retrieval (offline-first) |
+
 ### Authentication
 
-Most endpoints require JWT authentication. Include the token in your request header:
-
 ```bash
-curl -H "Authorization: Bearer <access_token>" \
-  http://localhost:8000/api/v1/admin/content/
+# Get tokens
+curl -X POST http://localhost:8000/api/v1/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "yourpassword"}'
+
+# Response: {"access": "<token>", "refresh": "<token>"}
+
+# Use the access token
+curl http://localhost:8000/api/v1/notifications/ \
+  -H "Authorization: Bearer <access_token>"
+
+# Refresh when expired (default: 60 min)
+curl -X POST http://localhost:8000/api/v1/auth/token/refresh/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh": "<refresh_token>"}'
 ```
 
-**Getting a token:**
-1. POST to `/api/v1/auth/login/` with email and password
-2. Response contains `access` and `refresh` tokens
-3. Token expires after 60 minutes; use `refresh` token to get a new one
-
-### API Endpoints by Group
-
-| Group | Base | Purpose |
-|---|---|---|
-| **Authentication** | `/api/v1/auth/` | Register, login, logout, token refresh, email verification, password reset |
-| **Admin Auth** | `/api/v1/admin-auth/` | Staff/admin-only login, token management |
-| **Public Content** | `/api/v1/public/` | Browse posts, series, homepage, search (public — no auth needed) |
-| **Member Profile** | `/api/v1/me/` | Current user profile, preferences, settings |
-| **Comments** | `/api/v1/comments/` | Post comments, threaded replies, delete (auth required) |
-| **Reactions** | `/api/v1/reactions/` | Add/remove reactions (Like, Amen, Love, etc.) |
-| **Notifications** | `/api/v1/notifications/` | List notifications, mark as read, subscribe |
-| **Admin Content** | `/api/v1/admin/content/` | Create, edit, publish, delete posts (staff+) |
-| **Admin Series** | `/api/v1/admin/series/` | Manage sermon series (staff+) |
-| **Admin Drafts** | `/api/v1/admin/content/drafts/` | Save/load post drafts (staff+) |
-| **Admin Users** | `/api/v1/admin/users/` | List, search, suspend, promote users (admin only) |
-| **Admin Moderation** | `/api/v1/admin/interactions/` | Moderate comments, questions, flagged content (staff+) |
-| **Payments** | `/api/v1/payments/` | Initialize donation, verify payment, check status |
-| **Email Campaigns** | `/api/v1/admin/email/` | Create, send, track campaigns (admin only) |
-| **Settings** | `/api/v1/admin/settings/` | Platform config, content types (admin only) |
-
-### WebSocket Endpoint
+### WebSocket
 
 ```
-ws://localhost:8000/ws/notifications/    (local dev)
-wss://yourdomain.com/ws/notifications/   (production with SSL)
+ws://localhost:8000/ws/notifications/     (development)
+wss://yourdomain.com/ws/notifications/    (production)
 ```
 
-WebSocket connects using your existing session. Once connected, you'll receive real-time notification events.
+Requires an authenticated session. Receives notification events in real time.
 
 ---
 
-## 13. Deployment
+## Deployment
 
 ### Production with Docker Compose
 
-The simplest way to deploy to a VPS, cloud server, or localhost.
-
-**Prerequisites:**
-- Docker & Docker Compose installed
-- Domain name (for SSL)
-- PostgreSQL or cloud database (optional; included in compose)
-- Email SMTP credentials
-- Paystack account (for payments)
-
-**Steps:**
-
 ```bash
-# 1. Clone and navigate to project
-git clone <repo-url>
-cd church-digital-platform
+# On your server
+git clone https://github.com/Gidheav/church-digital-engagement-platform.git
+cd church-digital-engagement-platform
 
-# 2. Create production environment file
-cp .env.example .env.production
+cp .env.production.example .env.production
+# Edit .env.production with production values
 
-# 3. Edit with real values:
-#    - SECRET_KEY: long random string
-#    - ALLOWED_HOSTS: your actual domain
-#    - DATABASE_URL: production database
-#    - REDIS_URL: production Redis
-#    - PAYSTACK_SECRET_KEY: live keys
-#    - etc.
-nano .env.production
-
-# 4. Build and start
-docker-compose -f docker-compose.yml up -d --build
-
-# 5. Run migrations
+docker-compose up -d --build
 docker-compose exec web python backend/manage.py migrate
-
-# 6. Collect static files
 docker-compose exec web python backend/manage.py collectstatic --noinput
-
-# 7. Create admin user
 docker-compose exec web python backend/manage.py createsuperuser
-
-# 8. Verify health
-docker-compose ps
-curl http://localhost:8000/api/v1/health/
 ```
 
-**Access:**
-- Website: `http://yourdomain.com` (or `http://localhost:8000` locally)
-- Admin: `http://yourdomain.com/admin-auth`
-- API Docs: `http://yourdomain.com/api/v1/docs/`
+### Pre-deployment checklist
 
-### Production Checklist
+- [ ] `DEBUG=False` in environment
+- [ ] `SECRET_KEY` is a unique, random 50+ character string (not the default)
+- [ ] `ALLOWED_HOSTS` lists only your actual domain(s)
+- [ ] `CORS_ALLOWED_ORIGINS` lists only your frontend origin(s)
+- [ ] Database is PostgreSQL (not SQLite)
+- [ ] SSL/TLS certificate configured (Let's Encrypt or equivalent)
+- [ ] Nginx HTTPS redirect uncommented in `nginx.conf`
+- [ ] Paystack keys are live (not test)
+- [ ] Paystack webhook URL configured in Paystack dashboard
+- [ ] SMTP credentials verified and tested
+- [ ] `.env` files are in `.gitignore` and not committed
+- [ ] Database backup schedule in place
+- [ ] Firewall allows only ports 80, 443, and SSH
+- [ ] Error monitoring configured (Sentry or equivalent)
 
-Before going live, confirm:
+### Scaling considerations
 
-- [ ] `DEBUG=False`
-- [ ] Strong, unique `SECRET_KEY` (50+ random characters)
-- [ ] `ALLOWED_HOSTS` set to actual domain
-- [ ] `CORS_ALLOWED_ORIGINS` set to frontend domain
-- [ ] PostgreSQL (not SQLite) in production
-- [ ] HTTPS/SSL certificate configured
-- [ ] Email SMTP verified and tested
-- [ ] Paystack live keys (not test keys)
-- [ ] Webhook URL configured in Paystack dashboard
-- [ ] Database backups scheduled
-- [ ] Error monitoring (e.g., Sentry) configured
-- [ ] Firewall rules allow 80, 443, SSH access only
-- [ ] Environment variables never committed to git
-- [ ] `.env` file added to `.gitignore`
+For deployments serving 10,000+ members or handling high traffic:
 
-### Scaling (Large Deployments)
-
-For churches with 10,000+ members or high traffic:
-
-1. **Separate database** — Use managed PostgreSQL (AWS RDS, DigitalOcean, etc.)
-2. **Separate Redis** — Use managed Redis instance
-3. **Multiple web workers** — Run several Django instances behind load balancer
-4. **Dedicated Celery** — Run worker on separate server
-5. **CDN** — Put static files and images on CDN (Cloudflare, etc.)
-6. **Monitoring** — Add Sentry (error tracking), New Relic (performance)
+| Concern | Recommendation |
+|---|---|
+| Database | Migrate to managed PostgreSQL (AWS RDS, DigitalOcean Managed DB, or equivalent) |
+| Redis | Use a managed Redis instance |
+| Application servers | Run multiple Django instances behind a load balancer |
+| Background tasks | Dedicate a separate machine or container for Celery workers |
+| Static assets | Serve through a CDN (Cloudflare, AWS CloudFront) |
+| Monitoring | Add Sentry for error tracking, Prometheus/Grafana or New Relic for performance |
 
 ---
 
-## 14. Design Principles
+## Security Model
 
-These principles guide every technical decision in the codebase:
+### Authentication and authorization
 
-1. **Backend is the single source of truth**
-   - All data, permissions, and business logic live in the API
-   - Frontend only presents — it never invents or bypasses
-   - Role checks are enforced on every API endpoint
+- JWT tokens with configurable expiration (default: 60 minutes) and token rotation via refresh tokens
+- Role-based access control enforced on every API endpoint through DRF permission classes
+- Email verification required for new accounts before granting authenticated access
+- Password hashing with Django's PBKDF2 (default: 600,000 iterations)
+- Google OAuth with backend-side token verification and audience matching
+- Account suspension capability (data preserved, all access denied)
 
-2. **Security is built in, not bolted on**
-   - JWT tokens with expiration
-   - Role-based access control (RBAC) on every endpoint
-   - Password hashing with Django's PBKDF2
-   - XSS prevention with DOMPurify sanitization
-   - CSRF protection on all state-changing requests
-   - SQL injection impossible (ORM usage only)
-   - Secrets stored as environment variables (never hardcoded)
+### Application security
 
-3. **No mock data, ever**
-   - Every feature connects to real data
-   - No hardcoded fixtures or demo shortcuts
-   - All business logic is testable with real database
+| Threat | Mitigation |
+|---|---|
+| SQL injection | Eliminated by exclusive use of Django ORM (no raw SQL) |
+| Cross-site scripting (XSS) | User-submitted HTML sanitized through DOMPurify before rendering |
+| Cross-site request forgery (CSRF) | `CsrfViewMiddleware` active on all state-changing endpoints |
+| Cross-origin abuse | CORS configured to allow only specified origins (no wildcard) |
+| Secret exposure | All credentials in environment variables, `.env` files gitignored |
+| Unauthorized API access | JWT required for protected endpoints, role checked on every request |
 
-4. **Calm, professional design**
-   - No flashy animations or decorative noise
-   - Accessible design (WCAG 2.1 AA compliance)
-   - Semantic HTML with ARIA labels
-   - Enterprise-quality UI (comparable to Stripe, Vercel)
+### Payment security
 
-5. **Progressive complexity**
-   - Simple things are simple
-   - Platform works as a content site straight away
-   - Power features (campaigns, audit logs) available when needed
+- Webhook signature verification using HMAC SHA512 with timing-safe comparison (prevents timing attacks)
+- Amount validation: backend confirms the charged amount matches the original PaymentIntent
+- Pre-authorization intent expiry after 30 minutes
+- Per-user and per-IP rate limiting with user-agent tracking for fraud detection
+- Full audit trail of every payment event (intent creation, verification, webhook receipt, completion)
+- PCI compliance: Paystack handles all card data; the platform never receives or stores raw payment credentials
 
-6. **Documentation first**
-   - Code is self-documenting
-   - Architecture is clear and explicit
-   - Complex sections have detailed comments
+### Audit trail
+
+- Every administrative action is logged: content publish/delete, role changes, user suspension, payment events, moderation actions
+- Logs include the acting user, timestamp, affected resource, and action type
+- Soft deletes preserve data for audit integrity
+- Audit logs are exportable for compliance purposes
+
+### Reporting vulnerabilities
+
+If you discover a security vulnerability:
+1. Do not open a public issue.
+2. Contact the development team directly.
+3. Include a description of the issue, steps to reproduce, and potential impact.
+4. We will investigate and issue a patch.
 
 ---
 
-## 15. Project Status & Roadmap
+## Design Decisions
 
-### Core Features (✅ Production-Ready)
+These are the guiding principles behind the architecture and codebase, and the reasoning for each:
 
-| Feature | Status | Notes |
+**1. Backend is the single source of truth.**
+All data, permissions, and business logic live in the API. The frontend presents data, it does not make authorization decisions. This means you can swap the frontend entirely (or build a mobile app) without reimplementing access control.
+
+**2. Security is structural, not aspirational.**
+Every endpoint has a permission class. Every user input is sanitized. Every secret is externalized. These are not "nice to haves" checked off at the end, they are preconditions enforced from the first line of code.
+
+**3. No mock data in production code.**
+Every feature connects to real data through real API calls. No hardcoded arrays, no localStorage hacks, no demo shortcuts. What runs in development runs in production.
+
+**4. Progressive complexity.**
+The platform works as a basic content site immediately after deployment. Advanced features (campaigns, audit logs, analytics, payment processing) are available but do not add complexity for churches that do not need them yet.
+
+**5. Twelve-factor configuration.**
+All environment-specific values come from environment variables. The same codebase runs in development, staging, and production without modification. Configuration is the only thing that changes between environments.
+
+**6. Offline-first where it matters.**
+The Bible module uses IndexedDB for client-side caching so it works without network access after first load. Notifications degrade gracefully from WebSocket to REST polling. The platform does not break when connectivity is unreliable.
+
+---
+
+## Project Status and Roadmap
+
+### Production-ready (shipped)
+
+| Module | Status | Notes |
 |---|---|---|
-| **Public content browsing** | ✅ Live | Posts, series, events, search |
-| **User registration & login** | ✅ Live | Email verification, password reset |
-| **Reactions** | ✅ Live | 5 emoji reactions (Like, Amen, Love, Insight, Praise) |
-| **Threaded comments & Q&A** | ✅ Live | Comment moderation, answer resolution |
-| **Member profile & preferences** | ✅ Live | Notification settings, profile edit |
-| **Admin dashboard** | ✅ Live | Metrics, user stats, content stats |
-| **Content management** | ✅ Live | Create, edit, publish, delete, draft, schedule |
-| **Sermon series management** | ✅ Live | Organize content in series |
-| **Draft auto-save** | ✅ Live | Auto-saves every 30 seconds |
-| **User management** | ✅ Live | Roles, suspension, reactivation, export |
-| **Comment moderation** | ✅ Live | Review, approve, delete |
-| **Custom content types** | ✅ Live | Create new categories |
-| **Audit logging** | ✅ Live | Every action tracked |
-| **Email campaigns** | ✅ Live | Create, send, track newsletters |
-| **Payment processing** | ✅ Live | Paystack integration with fraud detection |
-| **Real-time notifications** | ✅ Live | WebSocket + REST API fallback |
-| **Docker deployment** | ✅ Live | Full-stack Docker Compose setup |
-| **API documentation** | ✅ Live | Auto-generated Swagger/OpenAPI |
+| Public content browsing (posts, series, search, events) | Complete | Full-text search, category filtering, pagination |
+| User registration, login, email verification, password reset | Complete | JWT + Google OAuth |
+| Reactions (Like, Amen, Love, Insight, Praise) | Complete | Toggle-based, real-time count updates |
+| Threaded comments and Q&A | Complete | Nested replies, moderator answers, resolution tracking |
+| Member dashboard and profile management | Complete | Notification preferences, activity view |
+| Admin dashboard with engagement metrics | Complete | Member count, content stats, recent activity |
+| Content management (create, edit, publish, schedule, draft) | Complete | Auto-save every 30 seconds |
+| Sermon series management | Complete | Drag-and-drop ordering |
+| User management (roles, suspension, export) | Complete | Full RBAC |
+| Comment and content moderation | Complete | Moderation queue, bulk actions |
+| Custom content types | Complete | Admin-configurable |
+| Audit logging | Complete | All admin actions tracked |
+| Email campaigns | Complete | Templates, segmentation, scheduling, delivery tracking |
+| Payment processing (Paystack) | Complete | Full pipeline with fraud detection |
+| Real-time notifications (WebSocket) | Complete | With REST fallback |
+| Docker deployment | Complete | Multi-stage build, health checks, Nginx |
+| API documentation (OpenAPI 3.0) | Complete | Swagger + ReDoc |
+| Analytics and visitor tracking | Complete | Page views, device fingerprinting |
+| Bible module | Complete | Offline-first with IndexedDB cache |
+| Contact form with admin inbox | Complete | Public submission, admin review |
 
-### Features in Progress 🔧
+### In progress
 
-| Feature | Status | Expected |
+| Feature | Status | Details |
 |---|---|---|
-| **Email campaign admin UI** | 🔧 Backend complete | Q2 2026 |
-| **Reports & analytics UI** | 🔧 Backend complete | Q2 2026 |
-| **Moderation reports UI** | 🔧 Backend complete | Q2 2026 |
-| **Member sermon library** | 🔧 UI in progress | Q1 2026 |
-| **Bible module** | ⏸ Paused | TBD |
+| Reports and analytics UI | Backend complete, frontend in development | Visual dashboards for engagement data |
+| Email campaign admin UI | Backend complete, frontend in development | Full campaign management interface |
+| Moderation reports UI | Backend complete, frontend in development | Visual flagged content management |
 
-### Planned Features 📋
+### Planned
 
-| Feature | Priority | Notes |
-|---|---|---|
-| **Small groups management** | High | Create, join, manage groups |
-| **Prayer wall** | Medium | Prayer requests, community support |
-| **Events calendar** | High | RSVP, capacity management |
-| **Volunteer management** | Medium | Track availability, shifts |
-| **Podcasting** | Low | Audio distribution, RSS feed |
-| **Recurring donations** | High | Monthly giving setup |
-| **Mobile app** | Low | React Native or native apps |
+| Feature | Priority |
+|---|---|
+| Small groups management | High |
+| Events calendar with RSVP and capacity | High |
+| Recurring donations (monthly giving) | High |
+| Prayer wall | Medium |
+| Volunteer management | Medium |
+| Podcasting (RSS feed generation) | Low |
+| Mobile application | Low |
 
 ---
 
-## 16. Security
+## Contributing
 
-### Authentication & Authorization
+Read [instruction.md](instruction.md) before submitting any code. It covers coding standards, naming conventions, branching strategy, commit message format, and code review criteria.
 
-- **JWT tokens** with 60-minute expiration and token rotation
-- **Role-based access control** enforced on all endpoints
-- **Email verification** required for new accounts
-- **Password hashing** with PBKDF2 (default 600,000 iterations)
-- **Account suspension** capability (data remains, access denied)
+**Requirements for all contributions:**
+- Zero TypeScript errors and zero ESLint warnings in frontend code
+- All backend tests must pass
+- New features require corresponding tests and documentation
+- No hardcoded values, no mock data
 
-### Data Protection
-
-- **SQL Injection:** Impossible — Django ORM prevents this
-- **XSS Protection:** User HTML sanitized with DOMPurify before rendering
-- **CSRF Protection:** `CsrfViewMiddleware` on all state-changing requests
-- **CORS:** Configured to allow only specified origins (no `*` wildcard)
-- **Secrets:** All sensitive values in environment variables (never hardcoded)
-
-### Payment Security
-
-- **Webhook signature verification** — HMAC SHA512 with timing-safe comparison
-- **Fraud detection** — Automatic rate-limiting and IP/user-agent tracking
-- **Amount validation** — Platform verifies exact amount with Paystack
-- **Intent expiry** — Pre-authorized intents expire after 30 minutes
-- **Audit logging** — Every payment event recorded for compliance
-
-### Audit Trail
-
-- **Every action logged** — Who did what, when, and to what resource
-- **Admin actions** — publish, delete, role change, suspension all logged
-- **Never deleted** — Soft deletes preserve data for audit purposes
-- **Exportable** — Audit logs can be exported for compliance
-
-### Reporting Security Issues
-
-To report a security vulnerability:
-1. **Do NOT** open a public GitHub issue
-2. **Contact** the development team privately
-3. Include description, steps to reproduce, and potential impact
-4. We will investigate and patch promptly
-
----
-
-## 17. Contributing
-
-We welcome contributions! Please read [instruction.md](instruction.md) first, which covers:
-
-- ✅ Coding standards and naming conventions
-- ✅ Branching strategy (feature branches, naming patterns)
-- ✅ Commit message format
-- ✅ Pull request process
-- ✅ Code review criteria
-- ✅ Testing requirements
-- ✅ When to update documentation
-
-**General guidelines:**
-- No TypeScript errors or ESLint warnings in frontend code
-- No failing tests in backend code
-- All new features require tests and documentation
-- No hardcoded values, no mock data in production code
-
-**To contribute:**
+**Process:**
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes
-4. Write tests for new functionality
-5. Ensure all tests pass
-6. Commit with clear messages: `git commit -m "Add feature: description"`
-7. Push to your fork: `git push origin feature/your-feature-name`
-8. Open a pull request against `main`
-9. Code review and feedback
-10. Merge once approved
+2. Create a feature branch from `main`: `git checkout -b feature/your-feature`
+3. Implement your changes with tests
+4. Confirm all tests pass locally
+5. Push and open a pull request against `main`
+6. Address code review feedback
+7. Merge after approval
 
 ---
 
-## 18. License
+## License
 
-License terms are to be determined. Contact the project maintainers for usage rights and distribution restrictions.
+Proprietary. Contact the project maintainers for usage rights, distribution terms, and licensing inquiries.
 
 ---
 
 <div align="center">
 
-**Built with care for churches and communities.**
+**Church Digital Engagement Platform**
 
-Questions? Email the development team or open an issue.
-
-[View on GitHub](https://github.com) · [Report a Bug](https://github.com) · [Request a Feature](https://github.com)
+[Repository](https://github.com/Gidheav/church-digital-engagement-platform) · [Report a Bug](https://github.com/Gidheav/church-digital-engagement-platform/issues) · [Request a Feature](https://github.com/Gidheav/church-digital-engagement-platform/issues)
 
 </div>
