@@ -378,6 +378,11 @@ CORS_ALLOWED_ORIGINS = config(
     default=','.join(DEFAULT_ALLOWED_ORIGINS),
     cast=Csv(),
 )
+# Required for Vercel preview and production deployments (*.vercel.app)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+
 # Set to False since we removed withCredentials from frontend (JWT-only, no cookies)
 CORS_ALLOW_CREDENTIALS = False
 
@@ -408,6 +413,8 @@ CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 # ==============================================================================
 CSRF_TRUSTED_ORIGINS = [
     *CORS_ALLOWED_ORIGINS,
+    'https://*.vercel.app',
+    'https://*.onrender.com',
 ]
 # Required for popup OAuth providers to communicate back to the opener window.
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
