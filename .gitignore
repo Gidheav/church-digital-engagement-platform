@@ -88,14 +88,14 @@ tailwind.config.js
 /ANALYTICS_IMPLEMENTATION.md
 /Bible_Module_Engineering_Spec.docx
 /Default Book Cover.png
-/docker-compose.yml
-/Dockerfile
+#/docker-compose.yml
+#/Dockerfile
 /homepage.html
 /instruction.md
 /migrate_to_postgresql.bat
 /RBAC_IMPLEMENTATION.md
 /check_hero_sections.py
-/nginx.conf
+#/nginx.conf
 Design/
 
 # ==========================
@@ -143,3 +143,8 @@ backend/data/test_kjv.json
 # ==========================
 public/test-*
 src/pages/Debug*
+
+# ==========================
+# Mobile
+# ==========================
+/mobile
