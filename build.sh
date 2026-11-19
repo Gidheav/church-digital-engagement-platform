@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 # Render Build Script — runs during each deploy
-# Installs Python deps, runs migrations, collects static files
+# Builds React frontend, installs Python deps, runs migrations, collects static files
 
 set -o errexit  # Exit on error
+
+echo "==> Installing Node dependencies..."
+npm ci
+
+echo "==> Building React frontend..."
+npm run build
+
+echo "==> Copying frontend build to backend..."
+rm -rf backend/frontend-build
+cp -r build backend/frontend-build
 
 echo "==> Installing Python dependencies..."
 pip install --upgrade pip
