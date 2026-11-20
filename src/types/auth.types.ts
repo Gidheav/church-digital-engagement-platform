@@ -64,3 +64,10 @@ export interface JwtPayload {
   iat?: number;
   token_type?: string;
 }
+
+export const DEFAULT_GOOGLE_CLIENT_ID =
+  '258988026617-2po3fisocs5sjuevhjste0i1van7a315.apps.googleusercontent.com';
+
+export const GOOGLE_CLIENT_ID =
+  (process.env.REACT_APP_GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID).trim();
+

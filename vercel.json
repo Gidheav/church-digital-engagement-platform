@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "create-react-app",
-  "buildCommand": "REACT_APP_API_BASE_URL=https://church-digital-engagement-platform-2q9v.onrender.com/api/v1 CI=false npm run build",
+  "buildCommand": "REACT_APP_API_BASE_URL=https://church-digital-engagement-platform-2q9v.onrender.com/api/v1 REACT_APP_GOOGLE_CLIENT_ID=258988026617-2po3fisocs5sjuevhjste0i1van7a315.apps.googleusercontent.com CI=false npm run build",
   "outputDirectory": "build",
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [

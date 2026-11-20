@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../auth/AuthContext';
+import { GOOGLE_CLIENT_ID } from '../types/auth.types';
 import '../styles/Auth.css';
 
 const RegisterPage: React.FC = () => {
@@ -80,7 +81,7 @@ const RegisterPage: React.FC = () => {
     setError('Google sign-up failed. Please try again.');
   };
 
-  const googleClientId = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+  const googleClientId = GOOGLE_CLIENT_ID;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

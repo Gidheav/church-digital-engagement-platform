@@ -9,6 +9,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { BibleProvider } from './bible';
 import AppRouter from './router/AppRouter';
+import { GOOGLE_CLIENT_ID } from './types/auth.types';
 import './styles/ConfirmModal.css';
 
 class BibleErrorBoundary extends React.Component<{ children: React.ReactNode }> {
@@ -51,7 +52,7 @@ const App: React.FC = () => {
     </BibleErrorBoundary>
   );
 
-  const googleClientId = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+  const googleClientId = GOOGLE_CLIENT_ID;
   if (!googleClientId) {
     return appTree;
   }

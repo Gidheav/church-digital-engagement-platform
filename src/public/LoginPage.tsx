@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../auth/AuthContext';
+import { GOOGLE_CLIENT_ID } from '../types/auth.types';
 import '../styles/Auth.css';
 
 const LoginPage: React.FC = () => {
@@ -48,7 +49,7 @@ const LoginPage: React.FC = () => {
     console.info('[GOOGLE_AUTH_DEBUG] STAGE 1: Google popup returned success callback', {
       hasCredential: Boolean(credentialResponse?.credential),
       credentialLength: credentialResponse?.credential?.length || 0,
-      clientIdConfigured: Boolean((process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim()),
+      clientIdConfigured: Boolean(GOOGLE_CLIENT_ID),
     });
 
     setError('');
@@ -85,7 +86,7 @@ const LoginPage: React.FC = () => {
     setError('Google sign-in failed. Please try again.');
   };
 
-  const googleClientId = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+  const googleClientId = GOOGLE_CLIENT_ID;
 
   return (
     <div className="auth-container">
